@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "sh -c 'if [ -n \"$DIRECT_URL\" ]; then npx prisma migrate deploy; fi' && next build",
+    "build": "sh -c 'if [ -n \"$DIRECT_URL\" ]; then npx prisma migrate deploy && npx prisma db seed; fi' && next build",
     "start": "next start",
     "lint": "next lint",
     "test": "vitest run",
