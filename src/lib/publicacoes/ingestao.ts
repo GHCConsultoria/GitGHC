@@ -67,6 +67,12 @@ export async function ingerirPublicacoes(
       continue;
     }
 
+    // Assume que a fonte manda uma data (sem hora com significado real) —
+    // "2026-01-02" vira meia-noite UTC, que é a convenção deste projeto para
+    // dia-calendário (ver src/lib/prazos/calculo.ts). Se a resposta real do
+    // DJEN vier com timestamp de instante (hora relevante), troque esta
+    // linha por `paraDataCalendarioSaoPaulo(new Date(...))` para resolver o
+    // dia certo em America/Sao_Paulo antes de persistir.
     const dataDisponibilizacao = new Date(bruta.dataDisponibilizacao);
     if (Number.isNaN(dataDisponibilizacao.getTime())) {
       resultado.ignoradas.push({

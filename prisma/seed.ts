@@ -117,17 +117,53 @@ async function seedFeriadosNacionais() {
   console.log(`Semeados ${registros.length} feriados/recesso nacionais para ${UFS.length} UFs.`);
 }
 
+// Mapeamento inicial tipoAto -> diasPrazo. Tabela configurável (não é
+// hardcoded na lógica do motor de prazo) — dá pra adicionar/editar linhas
+// aqui ou por uma tela futura sem tocar em src/lib/prazos.
+const TIPOS_ATO_PRAZO: Array<{
+  tipoAto: string;
+  diasPrazo: number;
+  contagemDiasUteis: boolean;
+  descricao: string;
+}> = [
+  { tipoAto: "contestacao", diasPrazo: 15, contagemDiasUteis: true, descricao: "Contestação (art. 335, CPC)" },
+  { tipoAto: "apelacao", diasPrazo: 15, contagemDiasUteis: true, descricao: "Apelação (art. 1.003, §5º, CPC)" },
+  {
+    tipoAto: "embargos_de_declaracao",
+    diasPrazo: 5,
+    contagemDiasUteis: true,
+    descricao: "Embargos de declaração (art. 1.023, CPC)",
+  },
+];
+
+async function seedTiposAtoPrazo() {
+  for (const tipo of TIPOS_ATO_PRAZO) {
+    await prisma.tipoAtoPrazo.upsert({
+      where: { tipoAto: tipo.tipoAto },
+      update: {},
+      create: tipo,
+    });
+  }
+  console.log(`Semeados ${TIPOS_ATO_PRAZO.length} tipos de ato em TipoAtoPrazo.`);
+}
+
 async function main() {
   await seedEscritorioEUsuario();
   await seedFeriadosNacionais();
+  await seedTiposAtoPrazo();
 
   // TODO(feriados estaduais/tribunal): esta seed cobre apenas o calendário
   // NACIONAL (aplicável a toda UF, tribunal = null). Feriados estaduais,
   // forais e suspensões específicas de cada tribunal (TJSP, TRF3, TRT2 etc.)
   // não são inferíveis e precisam ser cadastrados manualmente em
-  // FeriadoForense com o campo `tribunal` preenchido. Enquanto uma UF não
-  // tiver seu calendário revisado, o motor de prazo (Fase 3) deve recusar o
-  // cálculo automático e mandar para revisão manual.
+  // FeriadoForense com o campo `tribunal` preenchido.
+  //
+  // TODO(revisão de feriados): RevisaoFeriadosUf fica deliberadamente vazia
+  // nesta seed. Marcar uma UF/ano como revisado é uma decisão humana ("eu
+  // conferi que o calendário forense desta UF está completo para este ano"),
+  // não algo que a seed pode assumir. Enquanto uma UF/ano não estiver
+  // marcado aqui, o motor de prazo (Fase 3) recusa calcular e manda para
+  // revisão manual com o alerta FERIADOS_NAO_REVISADOS.
 }
 
 main()

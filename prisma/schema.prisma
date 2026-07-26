@@ -202,3 +202,40 @@ model FeriadoForense {
   @@unique([uf, tribunal, data])
   @@map("feriados_forenses")
 }
+
+// ---------------------------------------------------------------------------
+// Motor de prazo (Fase 3)
+// ---------------------------------------------------------------------------
+
+// Mapeamento tipoAto -> diasPrazo, configurável e fora do meio da lógica de
+// cálculo. Se um tipoAto não estiver aqui, o motor manda para revisão manual
+// em vez de chutar um valor.
+model TipoAtoPrazo {
+  id                String  @id @default(cuid())
+  tipoAto           String  @unique
+  diasPrazo         Int
+  contagemDiasUteis Boolean @default(true)
+  descricao         String?
+
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  @@map("tipos_ato_prazo")
+}
+
+// Controle de revisão do calendário forense por UF/ano. Existe para
+// distinguir "esta UF não tem feriado estadual cadastrado neste ano" de
+// "ainda não cadastramos os feriados desta UF" — sem isso as duas situações
+// são indistinguíveis e o motor arriscaria calcular um prazo com calendário
+// incompleto. Enquanto uma UF/ano não estiver marcado como revisado aqui, o
+// motor de prazo recusa calcular e manda para revisão manual com o alerta
+// FERIADOS_NAO_REVISADOS.
+model RevisaoFeriadosUf {
+  id       String  @id @default(cuid())
+  uf       String
+  ano      Int
+  revisado Boolean @default(false)
+
+  @@unique([uf, ano])
+  @@map("revisoes_feriados_uf")
+}
