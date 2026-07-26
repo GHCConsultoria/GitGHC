@@ -1,15 +1,8 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import { formatarDataHora } from "@/lib/formatacao";
 
 export const dynamic = "force-dynamic";
-
-function formatarDataHora(data: Date): string {
-  return new Intl.DateTimeFormat("pt-BR", {
-    timeZone: "America/Sao_Paulo",
-    dateStyle: "short",
-    timeStyle: "short",
-  }).format(data);
-}
 
 export default async function Saude() {
   const [ultimaExecucao, publicacoesNaoIdentificadas, prazosPendentes, execucoesRecentes] = await Promise.all([

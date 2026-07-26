@@ -51,6 +51,18 @@ export default async function Home() {
         </div>
         <nav className="flex shrink-0 items-center gap-5 text-sm">
           <Link
+            href="/processos"
+            className="border-b border-transparent pb-0.5 text-ink-soft transition-colors hover:border-brass hover:text-ink"
+          >
+            Processos
+          </Link>
+          <Link
+            href="/feriados"
+            className="border-b border-transparent pb-0.5 text-ink-soft transition-colors hover:border-brass hover:text-ink"
+          >
+            Feriados
+          </Link>
+          <Link
             href="/saude"
             className="border-b border-transparent pb-0.5 text-ink-soft transition-colors hover:border-brass hover:text-ink"
           >

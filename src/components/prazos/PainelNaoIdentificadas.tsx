@@ -3,17 +3,13 @@
 import { useState, useTransition } from "react";
 import type { Publicacao } from "@prisma/client";
 import { vincularPublicacaoAProcesso } from "@/lib/prazos/acoes";
+import { formatarDataCalendario } from "@/lib/formatacao";
 
 interface ProcessoResumo {
   id: string;
   numeroCnj: string;
   cliente: string;
   varaOrgao: string;
-}
-
-function formatarData(data: Date | string): string {
-  const instante = typeof data === "string" ? new Date(data) : data;
-  return new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo", dateStyle: "short" }).format(instante);
 }
 
 export function PainelNaoIdentificadas({
@@ -68,7 +64,7 @@ function ItemNaoIdentificada({
   return (
     <div className="paper-card rounded-sm border-l-[3px] border-l-rule p-5">
       <p className="eyebrow">
-        {publicacao.fonte} · {formatarData(publicacao.dataDisponibilizacao)}
+        {publicacao.fonte} · {formatarDataCalendario(publicacao.dataDisponibilizacao)}
       </p>
       <p className="mt-2 line-clamp-2 text-sm italic text-ink-soft">&ldquo;{publicacao.conteudo}&rdquo;</p>
 

@@ -1,13 +1,8 @@
 import { PrismaClient, RoleUsuario, TipoFeriado, Prisma } from "@prisma/client";
 import { calcularPrazo } from "../src/lib/prazos/calculo";
+import { UFS_BRASIL as UFS } from "../src/lib/br/ufs";
 
 const prisma = new PrismaClient();
-
-const UFS = [
-  "AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA", "MT", "MS",
-  "MG", "PA", "PB", "PR", "PE", "PI", "RJ", "RN", "RS", "RO", "RR", "SC",
-  "SP", "SE", "TO",
-] as const;
 
 // Feriados nacionais fixados em lei (Lei 10.607/2002, Lei 9.093/1995, Lei
 // 14.759/2023). Carnaval e Corpus Christi são pontos facultativos de âmbito

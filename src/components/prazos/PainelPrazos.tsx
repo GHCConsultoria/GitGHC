@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { z } from "zod";
 import type { ItemFilaPrazo, NivelUrgencia } from "@/lib/prazos/fila";
 import { confirmarPrazo, descartarPrazo, editarDataFatalPrazo } from "@/lib/prazos/acoes";
+import { formatarDataCalendario } from "@/lib/formatacao";
 
 const passoSchema = z.object({ descricao: z.string(), data: z.string() });
 const passosSchema = z.array(passoSchema);
@@ -31,10 +32,6 @@ const ROTULO_URGENCIA: Record<NivelUrgencia, string> = {
   VERDE: "Tranquilo",
 };
 
-function formatarData(data: Date | string): string {
-  const instante = typeof data === "string" ? new Date(data) : data;
-  return new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo", dateStyle: "short" }).format(instante);
-}
 
 export function PainelPrazos({ itens }: { itens: ItemFilaPrazo[] }) {
   if (itens.length === 0) {
@@ -105,7 +102,7 @@ function CartaoPrazo({ item }: { item: ItemFilaPrazo }) {
         </div>
         <div>
           <dt className="eyebrow mb-1">Disponibilização</dt>
-          <dd className="font-data text-sm">{formatarData(item.prazo.publicacao.dataDisponibilizacao)}</dd>
+          <dd className="font-data text-sm">{formatarDataCalendario(item.prazo.publicacao.dataDisponibilizacao)}</dd>
         </div>
         <div>
           <dt className="eyebrow mb-1">Prazo</dt>
@@ -115,7 +112,7 @@ function CartaoPrazo({ item }: { item: ItemFilaPrazo }) {
         </div>
         <div>
           <dt className="eyebrow mb-1">Data fatal</dt>
-          <dd className="font-display text-lg leading-none text-brass">{formatarData(prazo.dataFatal)}</dd>
+          <dd className="font-display text-lg leading-none text-brass">{formatarDataCalendario(prazo.dataFatal)}</dd>
         </div>
       </dl>
 
