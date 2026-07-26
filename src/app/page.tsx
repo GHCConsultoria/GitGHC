@@ -19,10 +19,10 @@ export default async function Home() {
     if (erro instanceof UsuarioNaoCadastradoError) {
       return (
         <main className="mx-auto flex min-h-screen max-w-md flex-col justify-center gap-3 p-6 text-center">
-          <h1 className="text-lg font-semibold">Conta sem acesso</h1>
-          <p className="text-sm text-black/60 dark:text-white/60">
-            Seu login foi reconhecido, mas não há um usuário cadastrado para você neste escritório. Peça para o
-            administrador te cadastrar.
+          <p className="eyebrow">Conta sem acesso</p>
+          <h1 className="font-display text-2xl">Seu login foi reconhecido, mas falta um cadastro</h1>
+          <p className="text-sm text-ink-soft">
+            Não há um usuário cadastrado para você neste escritório. Peça para o administrador te cadastrar.
           </p>
         </main>
       );
@@ -37,42 +37,54 @@ export default async function Home() {
   ]);
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-4xl flex-col gap-10 p-6 sm:p-10">
-      <header className="flex items-start justify-between gap-4">
+    <main className="mx-auto flex min-h-screen max-w-5xl flex-col gap-14 px-6 py-10 sm:px-10 sm:py-14">
+      <header className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold">Conferência de publicações e prazos</h1>
-          <p className="mt-1 text-sm text-black/60 dark:text-white/60">
-            O sistema propõe o prazo; a confirmação é sempre sua. Nada vira definitivo sem você clicar em Confirmar.
+          <p className="eyebrow mb-3">GitGHC · Conferência de prazos</p>
+          <h1 className="font-display text-4xl leading-none tracking-tight sm:text-5xl">
+            Publicações <span className="italic text-ink-soft">&amp;</span> prazos
+          </h1>
+          <p className="mt-3 max-w-lg text-[0.95rem] leading-relaxed text-ink-soft">
+            O sistema propõe o prazo; a confirmação é sempre sua. Nada vira definitivo sem você clicar em{" "}
+            <strong className="font-medium text-ink">Confirmar</strong>.
           </p>
         </div>
-        <div className="flex flex-col items-end gap-1 whitespace-nowrap text-sm">
-          <Link href="/saude" className="underline underline-offset-2">
+        <nav className="flex shrink-0 items-center gap-5 text-sm">
+          <Link
+            href="/saude"
+            className="border-b border-transparent pb-0.5 text-ink-soft transition-colors hover:border-brass hover:text-ink"
+          >
             Painel de saúde
           </Link>
           <form action={sair}>
-            <button type="submit" className="text-black/60 underline underline-offset-2 dark:text-white/60">
+            <button
+              type="submit"
+              className="border-b border-transparent pb-0.5 text-ink-soft transition-colors hover:border-brass hover:text-ink"
+            >
               Sair
             </button>
           </form>
-        </div>
+        </nav>
       </header>
 
       <section>
-        <h2 className="mb-3 text-lg font-medium">
-          Prazos aguardando confirmação
-          <span className="ml-2 text-sm font-normal text-black/50 dark:text-white/50">({itensFila.length})</span>
-        </h2>
+        <div className="mb-6 flex items-baseline justify-between rule pt-6">
+          <h2 className="eyebrow pt-4">Aguardando confirmação</h2>
+          <span className="font-display pt-4 text-2xl text-ink-faint">
+            {String(itensFila.length).padStart(2, "0")}
+          </span>
+        </div>
         <PainelPrazos itens={itensFila} />
       </section>
 
       <section>
-        <h2 className="mb-3 text-lg font-medium">
-          Publicações não identificadas
-          <span className="ml-2 text-sm font-normal text-black/50 dark:text-white/50">
-            ({publicacoesNaoIdentificadas.length})
+        <div className="mb-3 flex items-baseline justify-between rule pt-6">
+          <h2 className="eyebrow pt-4">Não identificadas</h2>
+          <span className="font-display pt-4 text-2xl text-ink-faint">
+            {String(publicacoesNaoIdentificadas.length).padStart(2, "0")}
           </span>
-        </h2>
-        <p className="mb-3 text-sm text-black/60 dark:text-white/60">
+        </div>
+        <p className="mb-6 max-w-2xl text-sm text-ink-soft">
           Publicações que a ingestão não conseguiu vincular a nenhum processo automaticamente. Vincule manualmente ou
           descarte.
         </p>

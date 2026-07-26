@@ -13,10 +13,16 @@ function extrairPassos(detalhesCalculo: unknown): Array<z.infer<typeof passoSche
   return parsed.success ? parsed.data : [];
 }
 
-const CORES_URGENCIA: Record<NivelUrgencia, string> = {
-  VERMELHO: "border-red-500 bg-red-50 dark:bg-red-950/40",
-  AMARELO: "border-yellow-500 bg-yellow-50 dark:bg-yellow-950/30",
-  VERDE: "border-green-600 bg-green-50 dark:bg-green-950/30",
+const ACENTO_URGENCIA: Record<NivelUrgencia, string> = {
+  VERMELHO: "border-l-urgent-line",
+  AMARELO: "border-l-attention-line",
+  VERDE: "border-l-calm-line",
+};
+
+const SELO_URGENCIA: Record<NivelUrgencia, string> = {
+  VERMELHO: "bg-urgent-bg text-urgent border-urgent-line/40",
+  AMARELO: "bg-attention-bg text-attention border-attention-line/40",
+  VERDE: "bg-calm-bg text-calm border-calm-line/40",
 };
 
 const ROTULO_URGENCIA: Record<NivelUrgencia, string> = {
@@ -32,13 +38,17 @@ function formatarData(data: Date | string): string {
 
 export function PainelPrazos({ itens }: { itens: ItemFilaPrazo[] }) {
   if (itens.length === 0) {
-    return <p className="text-sm text-black/50 dark:text-white/50">Nenhum prazo aguardando confirmação.</p>;
+    return (
+      <p className="paper-card rounded-sm px-5 py-8 text-center text-sm text-ink-faint">
+        Nenhum prazo aguardando confirmação.
+      </p>
+    );
   }
 
   return (
-    <ul className="flex flex-col gap-4">
-      {itens.map((item) => (
-        <li key={item.prazo.id}>
+    <ul className="flex flex-col gap-5">
+      {itens.map((item, indice) => (
+        <li key={item.prazo.id} className="stagger-in" style={{ "--stagger-index": indice } as React.CSSProperties}>
           <CartaoPrazo item={item} />
         </li>
       ))}
@@ -64,77 +74,93 @@ function CartaoPrazo({ item }: { item: ItemFilaPrazo }) {
   }
 
   return (
-    <div className={`rounded-lg border-l-4 p-4 shadow-sm ${CORES_URGENCIA[urgencia]}`}>
-      <div className="flex flex-wrap items-start justify-between gap-2">
+    <article className={`paper-card rounded-sm border-l-[3px] p-5 sm:p-6 ${ACENTO_URGENCIA[urgencia]}`}>
+      <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p className="font-medium">
-            {item.prazo.processo.cliente} — {item.prazo.processo.varaOrgao}
-          </p>
-          <p className="text-sm text-black/60 dark:text-white/60">
-            Processo {item.prazo.processo.numeroCnj} · {item.prazo.processo.tribunal}/{item.prazo.processo.uf}
+          <h3 className="font-display text-xl leading-snug">{item.prazo.processo.cliente}</h3>
+          <p className="mt-0.5 text-sm text-ink-soft">{item.prazo.processo.varaOrgao}</p>
+          <p className="mt-1 font-data text-xs tracking-wide text-ink-faint">
+            {item.prazo.processo.numeroCnj} · {item.prazo.processo.tribunal}/{item.prazo.processo.uf}
           </p>
         </div>
-        <span className="whitespace-nowrap rounded-full border border-current px-2 py-0.5 text-xs font-semibold">
+        <span
+          className={`inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-3 py-1 text-xs font-medium ${SELO_URGENCIA[urgencia]}`}
+        >
+          <span className="h-1.5 w-1.5 rounded-full bg-current" />
           {ROTULO_URGENCIA[urgencia]} · {diasUteisRestantes}d úteis
         </span>
       </div>
 
-      <div className="mt-3 rounded bg-black/[.03] p-2 text-sm dark:bg-white/[.06]">
-        <p className="font-mono text-xs text-black/60 dark:text-white/60">Trecho da publicação:</p>
-        <p className="line-clamp-3">{item.prazo.publicacao.conteudo}</p>
-      </div>
+      <blockquote className="mt-4 border-l-2 border-rule py-1 pl-4">
+        <p className="eyebrow mb-1">Trecho da publicação</p>
+        <p className="line-clamp-3 text-[0.9rem] italic leading-relaxed text-ink-soft">
+          &ldquo;{item.prazo.publicacao.conteudo}&rdquo;
+        </p>
+      </blockquote>
 
-      <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1 text-sm sm:grid-cols-4">
+      <dl className="mt-5 grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-4">
         <div>
-          <dt className="text-black/50 dark:text-white/50">Tipo de ato</dt>
-          <dd>{prazo.tipoAto}</dd>
+          <dt className="eyebrow mb-1">Tipo de ato</dt>
+          <dd className="text-sm">{prazo.tipoAto}</dd>
         </div>
         <div>
-          <dt className="text-black/50 dark:text-white/50">Disponibilização</dt>
-          <dd>{formatarData(item.prazo.publicacao.dataDisponibilizacao)}</dd>
+          <dt className="eyebrow mb-1">Disponibilização</dt>
+          <dd className="font-data text-sm">{formatarData(item.prazo.publicacao.dataDisponibilizacao)}</dd>
         </div>
         <div>
-          <dt className="text-black/50 dark:text-white/50">Prazo</dt>
-          <dd>
-            {prazo.diasPrazo} dias {prazo.contagemDiasUteis ? "úteis" : "corridos"}
+          <dt className="eyebrow mb-1">Prazo</dt>
+          <dd className="font-data text-sm">
+            {prazo.diasPrazo} {prazo.contagemDiasUteis ? "dias úteis" : "dias corridos"}
           </dd>
         </div>
         <div>
-          <dt className="text-black/50 dark:text-white/50">Data fatal</dt>
-          <dd className="font-semibold">{formatarData(prazo.dataFatal)}</dd>
+          <dt className="eyebrow mb-1">Data fatal</dt>
+          <dd className="font-display text-lg leading-none text-brass">{formatarData(prazo.dataFatal)}</dd>
         </div>
       </dl>
 
       {passos.length > 0 && (
-        <div className="mt-3">
+        <div className="mt-4">
           <button
             type="button"
-            className="text-xs font-medium underline underline-offset-2"
+            className="inline-flex items-center gap-1.5 text-xs font-medium text-ink-soft transition-colors hover:text-brass"
             onClick={() => setMostrarPassos((valor) => !valor)}
           >
-            {mostrarPassos ? "Ocultar" : "Como foi calculada"}
+            <svg
+              viewBox="0 0 10 10"
+              className={`h-2.5 w-2.5 transition-transform duration-300 ${mostrarPassos ? "rotate-180" : ""}`}
+              fill="none"
+            >
+              <path d="M1.5 3.5 5 7l3.5-3.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            Como foi calculada
           </button>
-          {mostrarPassos && (
-            <ol className="mt-2 list-decimal space-y-0.5 pl-5 text-xs text-black/70 dark:text-white/70">
-              {passos.map((passo, indice) => (
-                <li key={indice}>
-                  {passo.descricao}: <span className="font-mono">{passo.data}</span>
-                </li>
-              ))}
-            </ol>
-          )}
+          <div className={`expand ${mostrarPassos ? "is-open" : ""}`}>
+            <div>
+              <ol className="mt-3 space-y-1.5 border-t border-rule pt-3 text-xs text-ink-soft">
+                {passos.map((passo, indice) => (
+                  <li key={indice} className="flex gap-2">
+                    <span className="font-data text-ink-faint">{String(indice + 1).padStart(2, "0")}</span>
+                    <span>
+                      {passo.descricao}: <span className="font-data text-ink">{passo.data}</span>
+                    </span>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          </div>
         </div>
       )}
 
-      {erro && <p className="mt-2 text-sm text-red-600">{erro}</p>}
+      {erro && <p className="mt-3 text-sm text-urgent">{erro}</p>}
 
       {modoEdicao === "nenhum" && (
-        <div className="mt-4 flex gap-2">
+        <div className="mt-5 flex flex-wrap gap-2.5 border-t border-rule pt-5">
           <button
             type="button"
             disabled={pendente}
             onClick={confirmar}
-            className="rounded bg-green-700 px-3 py-1.5 text-sm font-medium text-white disabled:opacity-50"
+            className="rounded-sm bg-brass px-4 py-2 text-sm font-medium text-brass-on shadow-sm transition-colors hover:bg-brass-deep disabled:opacity-50"
           >
             Confirmar
           </button>
@@ -142,7 +168,7 @@ function CartaoPrazo({ item }: { item: ItemFilaPrazo }) {
             type="button"
             disabled={pendente}
             onClick={() => setModoEdicao("editar")}
-            className="rounded border px-3 py-1.5 text-sm font-medium"
+            className="rounded-sm border border-rule px-4 py-2 text-sm font-medium text-ink transition-colors hover:border-ink-faint disabled:opacity-50"
           >
             Editar data
           </button>
@@ -150,7 +176,7 @@ function CartaoPrazo({ item }: { item: ItemFilaPrazo }) {
             type="button"
             disabled={pendente}
             onClick={() => setModoEdicao("descartar")}
-            className="rounded border border-red-600 px-3 py-1.5 text-sm font-medium text-red-600"
+            className="rounded-sm border border-urgent-line/40 px-4 py-2 text-sm font-medium text-urgent transition-colors hover:bg-urgent-bg disabled:opacity-50"
           >
             Descartar
           </button>
@@ -188,7 +214,7 @@ function CartaoPrazo({ item }: { item: ItemFilaPrazo }) {
           }}
         />
       )}
-    </div>
+    </article>
   );
 }
 
@@ -210,39 +236,47 @@ function FormularioEditarData({
 
   return (
     <form
-      className="mt-4 flex flex-col gap-2 rounded border p-3"
+      className="mt-5 flex flex-col gap-3 rounded-sm border border-rule bg-paper p-4"
       onSubmit={(evento) => {
         evento.preventDefault();
         onSalvar(novaData, justificativa);
       }}
     >
       <label className="text-sm">
-        Nova data fatal
+        <span className="eyebrow mb-1.5 block">Nova data fatal</span>
         <input
           type="date"
           value={novaData}
           onChange={(evento) => setNovaData(evento.target.value)}
-          className="ml-2 rounded border px-2 py-1 text-sm"
+          className="rounded-sm border border-rule bg-paper-raised px-3 py-1.5 text-sm outline-none focus:border-brass"
           name={`nova-data-${prazoId}`}
           required
         />
       </label>
       <label className="text-sm">
-        Justificativa (obrigatória)
+        <span className="eyebrow mb-1.5 block">Justificativa (obrigatória)</span>
         <textarea
           value={justificativa}
           onChange={(evento) => setJustificativa(evento.target.value)}
-          className="mt-1 w-full rounded border px-2 py-1 text-sm"
+          className="w-full rounded-sm border border-rule bg-paper-raised px-3 py-2 text-sm outline-none focus:border-brass"
           rows={2}
           minLength={5}
           required
         />
       </label>
-      <div className="flex gap-2">
-        <button type="submit" disabled={pendente} className="rounded bg-black px-3 py-1.5 text-sm text-white disabled:opacity-50 dark:bg-white dark:text-black">
+      <div className="flex gap-2.5">
+        <button
+          type="submit"
+          disabled={pendente}
+          className="rounded-sm bg-ink px-4 py-2 text-sm font-medium text-paper-raised transition-opacity hover:opacity-90 disabled:opacity-50"
+        >
           Salvar
         </button>
-        <button type="button" onClick={onCancelar} className="rounded border px-3 py-1.5 text-sm">
+        <button
+          type="button"
+          onClick={onCancelar}
+          className="rounded-sm border border-rule px-4 py-2 text-sm text-ink-soft hover:text-ink"
+        >
           Cancelar
         </button>
       </div>
@@ -263,28 +297,36 @@ function FormularioDescartar({
 
   return (
     <form
-      className="mt-4 flex flex-col gap-2 rounded border border-red-300 p-3"
+      className="mt-5 flex flex-col gap-3 rounded-sm border border-urgent-line/30 bg-urgent-bg/40 p-4"
       onSubmit={(evento) => {
         evento.preventDefault();
         onConfirmar(motivo);
       }}
     >
       <label className="text-sm">
-        Motivo do descarte (obrigatório)
+        <span className="eyebrow mb-1.5 block">Motivo do descarte (obrigatório)</span>
         <textarea
           value={motivo}
           onChange={(evento) => setMotivo(evento.target.value)}
-          className="mt-1 w-full rounded border px-2 py-1 text-sm"
+          className="w-full rounded-sm border border-rule bg-paper-raised px-3 py-2 text-sm outline-none focus:border-urgent"
           rows={2}
           minLength={5}
           required
         />
       </label>
-      <div className="flex gap-2">
-        <button type="submit" disabled={pendente} className="rounded bg-red-700 px-3 py-1.5 text-sm text-white disabled:opacity-50">
+      <div className="flex gap-2.5">
+        <button
+          type="submit"
+          disabled={pendente}
+          className="rounded-sm bg-urgent px-4 py-2 text-sm font-medium text-paper-raised transition-opacity hover:opacity-90 disabled:opacity-50"
+        >
           Confirmar descarte
         </button>
-        <button type="button" onClick={onCancelar} className="rounded border px-3 py-1.5 text-sm">
+        <button
+          type="button"
+          onClick={onCancelar}
+          className="rounded-sm border border-rule px-4 py-2 text-sm text-ink-soft hover:text-ink"
+        >
           Cancelar
         </button>
       </div>

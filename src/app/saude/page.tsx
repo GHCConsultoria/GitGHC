@@ -12,50 +12,51 @@ function formatarDataHora(data: Date): string {
 }
 
 export default async function Saude() {
-  const [ultimaExecucao, publicacoesNaoIdentificadas, prazosPendentes, prazosParaRevisaoRecentes] =
-    await Promise.all([
-      prisma.execucaoCron.findFirst({ orderBy: { executadoEm: "desc" } }),
-      prisma.publicacao.count({ where: { status: "NAO_IDENTIFICADA" } }),
-      prisma.prazo.count({ where: { status: "PENDENTE_CONFIRMACAO" } }),
-      prisma.execucaoCron.findMany({ orderBy: { executadoEm: "desc" }, take: 10 }),
-    ]);
+  const [ultimaExecucao, publicacoesNaoIdentificadas, prazosPendentes, execucoesRecentes] = await Promise.all([
+    prisma.execucaoCron.findFirst({ orderBy: { executadoEm: "desc" } }),
+    prisma.publicacao.count({ where: { status: "NAO_IDENTIFICADA" } }),
+    prisma.prazo.count({ where: { status: "PENDENTE_CONFIRMACAO" } }),
+    prisma.execucaoCron.findMany({ orderBy: { executadoEm: "desc" }, take: 10 }),
+  ]);
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-3xl flex-col gap-8 p-6 sm:p-10">
+    <main className="mx-auto flex min-h-screen max-w-3xl flex-col gap-12 px-6 py-10 sm:px-10 sm:py-14">
       <header>
-        <Link href="/" className="text-sm underline underline-offset-2">
+        <Link href="/" className="text-sm text-ink-soft transition-colors hover:text-brass">
           ← voltar para a conferência de prazos
         </Link>
-        <h1 className="mt-2 text-2xl font-semibold">Painel de saúde</h1>
-        <p className="mt-1 text-sm text-black/60 dark:text-white/60">
-          Status da automação diária (ingestão + cálculo de prazo + alertas).
+        <p className="eyebrow mt-6 mb-2">Operação</p>
+        <h1 className="font-display text-4xl">Painel de saúde</h1>
+        <p className="mt-2 max-w-md text-sm text-ink-soft">
+          Status da automação diária — ingestão, cálculo de prazo e alertas.
         </p>
       </header>
 
       <section className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         <Metrica rotulo="Não identificadas (atual)" valor={publicacoesNaoIdentificadas} />
         <Metrica rotulo="Prazos pendentes (atual)" valor={prazosPendentes} />
+        <Metrica rotulo="Publicações ingeridas (última execução)" valor={ultimaExecucao?.publicacoesNovas ?? "—"} />
         <Metrica
-          rotulo="Publicações ingeridas (última execução)"
-          valor={ultimaExecucao?.publicacoesNovas ?? "—"}
+          rotulo="Prazos p/ revisão manual (última execução)"
+          valor={ultimaExecucao?.prazosParaRevisaoManual ?? "—"}
         />
-        <Metrica rotulo="Prazos p/ revisão manual (última execução)" valor={ultimaExecucao?.prazosParaRevisaoManual ?? "—"} />
       </section>
 
       <section>
-        <h2 className="mb-3 text-lg font-medium">Última execução do cron</h2>
+        <h2 className="eyebrow mb-4 rule pt-6">Última execução do cron</h2>
         {ultimaExecucao ? (
           <div
-            className={`rounded-lg border-l-4 p-4 text-sm ${
-              ultimaExecucao.sucesso
-                ? "border-green-600 bg-green-50 dark:bg-green-950/30"
-                : "border-red-500 bg-red-50 dark:bg-red-950/40"
+            className={`paper-card rounded-sm border-l-[3px] p-5 text-sm ${
+              ultimaExecucao.sucesso ? "border-l-calm-line" : "border-l-urgent-line"
             }`}
           >
-            <p className="font-medium">
-              {ultimaExecucao.sucesso ? "OK" : "Falhou"} · {formatarDataHora(ultimaExecucao.executadoEm)}
+            <p className="font-display text-lg">
+              <span className={ultimaExecucao.sucesso ? "text-calm" : "text-urgent"}>
+                {ultimaExecucao.sucesso ? "OK" : "Falhou"}
+              </span>{" "}
+              <span className="text-ink-faint">· {formatarDataHora(ultimaExecucao.executadoEm)}</span>
             </p>
-            <dl className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 sm:grid-cols-3">
+            <dl className="mt-4 grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-3">
               <Item rotulo="Publicações encontradas" valor={ultimaExecucao.publicacoesEncontradas} />
               <Item rotulo="Publicações novas" valor={ultimaExecucao.publicacoesNovas} />
               <Item rotulo="Não identificadas" valor={ultimaExecucao.publicacoesNaoIdentificadas} />
@@ -63,33 +64,33 @@ export default async function Saude() {
               <Item rotulo="P/ revisão manual" valor={ultimaExecucao.prazosParaRevisaoManual} />
             </dl>
             {ultimaExecucao.erro && (
-              <p className="mt-2 font-mono text-xs text-red-700 dark:text-red-300">{ultimaExecucao.erro}</p>
+              <p className="mt-4 rounded-sm border border-urgent-line/30 bg-urgent-bg/40 p-3 font-data text-xs text-urgent">
+                {ultimaExecucao.erro}
+              </p>
             )}
           </div>
         ) : (
-          <p className="text-sm text-black/50 dark:text-white/50">
+          <p className="paper-card rounded-sm px-5 py-8 text-center text-sm text-ink-faint">
             O cron ainda não rodou nenhuma vez neste ambiente.
           </p>
         )}
       </section>
 
       <section>
-        <h2 className="mb-3 text-lg font-medium">Histórico recente</h2>
-        <ul className="flex flex-col gap-1 text-sm">
-          {prazosParaRevisaoRecentes.map((execucao) => (
-            <li key={execucao.id} className="flex justify-between border-b py-1">
-              <span>{formatarDataHora(execucao.executadoEm)}</span>
-              <span className={execucao.sucesso ? "text-green-700" : "text-red-700"}>
+        <h2 className="eyebrow mb-4 rule pt-6">Histórico recente</h2>
+        <ul className="flex flex-col text-sm">
+          {execucoesRecentes.map((execucao) => (
+            <li key={execucao.id} className="flex items-center justify-between border-b border-rule py-2.5">
+              <span className="font-data text-ink-soft">{formatarDataHora(execucao.executadoEm)}</span>
+              <span className={execucao.sucesso ? "text-calm" : "text-urgent"}>
                 {execucao.sucesso ? "OK" : "Falhou"}
               </span>
-              <span className="text-black/60 dark:text-white/60">
+              <span className="font-data text-ink-faint">
                 {execucao.publicacoesNovas} novas · {execucao.prazosCriados} prazos
               </span>
             </li>
           ))}
-          {prazosParaRevisaoRecentes.length === 0 && (
-            <li className="text-black/50 dark:text-white/50">Sem execuções registradas.</li>
-          )}
+          {execucoesRecentes.length === 0 && <li className="py-3 text-ink-faint">Sem execuções registradas.</li>}
         </ul>
       </section>
     </main>
@@ -98,9 +99,9 @@ export default async function Saude() {
 
 function Metrica({ rotulo, valor }: { rotulo: string; valor: number | string }) {
   return (
-    <div className="rounded-lg border p-3">
-      <p className="text-2xl font-semibold">{valor}</p>
-      <p className="text-xs text-black/60 dark:text-white/60">{rotulo}</p>
+    <div className="paper-card rounded-sm p-4">
+      <p className="font-display text-3xl leading-none text-brass">{valor}</p>
+      <p className="mt-2 text-xs leading-snug text-ink-soft">{rotulo}</p>
     </div>
   );
 }
@@ -108,8 +109,8 @@ function Metrica({ rotulo, valor }: { rotulo: string; valor: number | string }) 
 function Item({ rotulo, valor }: { rotulo: string; valor: number }) {
   return (
     <div>
-      <dt className="text-black/50 dark:text-white/50">{rotulo}</dt>
-      <dd className="font-medium">{valor}</dd>
+      <dt className="eyebrow mb-1">{rotulo}</dt>
+      <dd className="font-data text-sm">{valor}</dd>
     </div>
   );
 }

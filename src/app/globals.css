@@ -3,25 +3,165 @@
 @tailwind utilities;
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --color-paper: #f2ebdc;
+  --color-paper-raised: #fbf8f0;
+  --color-ink: #201d1a;
+  --color-ink-soft: #6b6459;
+  --color-ink-faint: #a89f8d;
+  --color-rule: #ddd0b0;
+
+  --color-brass: #7c5e29;
+  --color-brass-deep: #5e461d;
+  --color-on-brass: #fbf8f0;
+
+  --color-urgent: #8c3a2b;
+  --color-urgent-bg: #f3e1d8;
+  --color-urgent-line: #c97a63;
+
+  --color-attention: #8a6415;
+  --color-attention-bg: #f3e9ce;
+  --color-attention-line: #c9a227;
+
+  --color-calm: #3c5f45;
+  --color-calm-bg: #e5ebdf;
+  --color-calm-line: #7fa173;
+
+  --shadow-card: 0 1px 2px rgba(32, 29, 26, 0.04), 0 8px 24px -12px rgba(32, 29, 26, 0.18);
+
+  /* Fixas — não trocam com o tema. Para elementos de assinatura (ex.: painel
+     de marca do login) que devem continuar escuros mesmo em light mode. */
+  --signature-ink: #201d1a;
+  --signature-paper: #efe8d8;
+  --signature-brass: #d2ac4e;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --color-paper: #15141a;
+    --color-paper-raised: #201e26;
+    --color-ink: #efe8d8;
+    --color-ink-soft: #aba290;
+    --color-ink-faint: #6e6759;
+    --color-rule: #34313a;
+
+    --color-brass: #d2ac4e;
+    --color-brass-deep: #e8c570;
+    --color-on-brass: #1a1712;
+
+    --color-urgent: #e0967a;
+    --color-urgent-bg: #33201b;
+    --color-urgent-line: #a85338;
+
+    --color-attention: #e0bb5d;
+    --color-attention-bg: #322915;
+    --color-attention-line: #a6841f;
+
+    --color-calm: #94c48f;
+    --color-calm-bg: #1c261c;
+    --color-calm-line: #4f7a52;
+
+    --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.3), 0 12px 32px -14px rgba(0, 0, 0, 0.6);
   }
 }
 
+* {
+  border-color: var(--color-rule);
+}
+
+html {
+  color-scheme: light dark;
+}
+
 body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+  color: var(--color-ink);
+  background: var(--color-paper);
+  font-family: var(--font-body), ui-sans-serif, system-ui, sans-serif;
+  position: relative;
+  min-height: 100vh;
+}
+
+/* Textura sutil de grão — dá a sensação de papel/impressão em vez de tela lisa. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.5;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.05 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+#__next,
+body > div {
+  position: relative;
+  z-index: 1;
+}
+
+::selection {
+  background: var(--color-brass);
+  color: var(--color-on-brass);
 }
 
 @layer utilities {
   .text-balance {
     text-wrap: balance;
+  }
+
+  .eyebrow {
+    font-family: var(--font-body), ui-sans-serif, sans-serif;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--color-ink-soft);
+  }
+
+  .rule {
+    border-top: 1px solid var(--color-rule);
+  }
+
+  .paper-card {
+    background: var(--color-paper-raised);
+    border: 1px solid var(--color-rule);
+    box-shadow: var(--shadow-card);
+  }
+
+  /* Truque do grid-template-rows para animar altura "auto" sem JS medindo px. */
+  .expand {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 360ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .expand.is-open {
+    grid-template-rows: 1fr;
+  }
+  .expand > div {
+    overflow: hidden;
+  }
+
+  .stagger-in {
+    animation: fade-up 560ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
+    animation-delay: calc(var(--stagger-index, 0) * 90ms);
+  }
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stagger-in {
+    animation: none;
+  }
+  .expand {
+    transition: none;
   }
 }

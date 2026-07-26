@@ -24,13 +24,17 @@ export function PainelNaoIdentificadas({
   processos: ProcessoResumo[];
 }) {
   if (publicacoes.length === 0) {
-    return <p className="text-sm text-black/50 dark:text-white/50">Nenhuma publicação pendente de vínculo.</p>;
+    return (
+      <p className="paper-card rounded-sm px-5 py-8 text-center text-sm text-ink-faint">
+        Nenhuma publicação pendente de vínculo.
+      </p>
+    );
   }
 
   return (
     <ul className="flex flex-col gap-3">
-      {publicacoes.map((publicacao) => (
-        <li key={publicacao.id}>
+      {publicacoes.map((publicacao, indice) => (
+        <li key={publicacao.id} className="stagger-in" style={{ "--stagger-index": indice } as React.CSSProperties}>
           <ItemNaoIdentificada publicacao={publicacao} processos={processos} />
         </li>
       ))}
@@ -62,17 +66,17 @@ function ItemNaoIdentificada({
   }
 
   return (
-    <div className="rounded-lg border p-4">
-      <p className="text-xs text-black/50 dark:text-white/50">
-        {publicacao.fonte} · disponibilizada em {formatarData(publicacao.dataDisponibilizacao)}
+    <div className="paper-card rounded-sm border-l-[3px] border-l-rule p-5">
+      <p className="eyebrow">
+        {publicacao.fonte} · {formatarData(publicacao.dataDisponibilizacao)}
       </p>
-      <p className="mt-1 line-clamp-2 text-sm">{publicacao.conteudo}</p>
+      <p className="mt-2 line-clamp-2 text-sm italic text-ink-soft">&ldquo;{publicacao.conteudo}&rdquo;</p>
 
-      <div className="mt-3 flex flex-wrap items-center gap-2">
+      <div className="mt-4 flex flex-wrap items-center gap-2.5">
         <select
           value={processoId}
           onChange={(evento) => setProcessoId(evento.target.value)}
-          className="rounded border px-2 py-1 text-sm"
+          className="rounded-sm border border-rule bg-paper px-3 py-1.5 text-sm outline-none focus:border-brass"
         >
           <option value="">Selecione o processo…</option>
           {processos.map((processo) => (
@@ -85,13 +89,13 @@ function ItemNaoIdentificada({
           type="button"
           disabled={pendente}
           onClick={vincular}
-          className="rounded bg-black px-3 py-1.5 text-sm text-white disabled:opacity-50 dark:bg-white dark:text-black"
+          className="rounded-sm bg-ink px-4 py-1.5 text-sm font-medium text-paper-raised transition-opacity hover:opacity-90 disabled:opacity-50"
         >
           Vincular
         </button>
       </div>
 
-      {erro && <p className="mt-2 text-sm text-red-600">{erro}</p>}
+      {erro && <p className="mt-2 text-sm text-urgent">{erro}</p>}
     </div>
   );
 }
