@@ -1,13 +1,34 @@
 import Link from "next/link";
-import { obterUsuarioAtual } from "@/lib/auth";
+import { redirect } from "next/navigation";
+import { obterUsuarioAtual, UsuarioNaoAutenticadoError, UsuarioNaoCadastradoError } from "@/lib/auth";
 import { buscarFilaPrazosPendentes, buscarProcessosParaVinculacao, buscarPublicacoesNaoIdentificadas } from "@/lib/prazos/fila";
 import { PainelPrazos } from "@/components/prazos/PainelPrazos";
 import { PainelNaoIdentificadas } from "@/components/prazos/PainelNaoIdentificadas";
+import { sair } from "@/app/login/actions";
 
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  const usuario = await obterUsuarioAtual();
+  let usuario;
+  try {
+    usuario = await obterUsuarioAtual();
+  } catch (erro) {
+    if (erro instanceof UsuarioNaoAutenticadoError) {
+      redirect("/login");
+    }
+    if (erro instanceof UsuarioNaoCadastradoError) {
+      return (
+        <main className="mx-auto flex min-h-screen max-w-md flex-col justify-center gap-3 p-6 text-center">
+          <h1 className="text-lg font-semibold">Conta sem acesso</h1>
+          <p className="text-sm text-black/60 dark:text-white/60">
+            Seu login foi reconhecido, mas não há um usuário cadastrado para você neste escritório. Peça para o
+            administrador te cadastrar.
+          </p>
+        </main>
+      );
+    }
+    throw erro;
+  }
 
   const [itensFila, publicacoesNaoIdentificadas, processos] = await Promise.all([
     buscarFilaPrazosPendentes(usuario.escritorioId),
@@ -24,9 +45,16 @@ export default async function Home() {
             O sistema propõe o prazo; a confirmação é sempre sua. Nada vira definitivo sem você clicar em Confirmar.
           </p>
         </div>
-        <Link href="/saude" className="whitespace-nowrap text-sm underline underline-offset-2">
-          Painel de saúde
-        </Link>
+        <div className="flex flex-col items-end gap-1 whitespace-nowrap text-sm">
+          <Link href="/saude" className="underline underline-offset-2">
+            Painel de saúde
+          </Link>
+          <form action={sair}>
+            <button type="submit" className="text-black/60 underline underline-offset-2 dark:text-white/60">
+              Sair
+            </button>
+          </form>
+        </div>
       </header>
 
       <section>
