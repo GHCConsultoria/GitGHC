@@ -3,8 +3,12 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  // Pooled (pgbouncer, porta 6543) — usada pela aplicação em runtime.
+  url       = env("DATABASE_URL")
+  // Direta (porta 5432) — só para migrations/DDL, que não funcionam bem
+  // atrás de um pooler em modo transaction. Usada por `prisma migrate deploy`.
+  directUrl = env("DIRECT_URL")
 }
 
 // ---------------------------------------------------------------------------
