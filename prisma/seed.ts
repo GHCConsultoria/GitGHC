@@ -1,4 +1,5 @@
 import { PrismaClient, RoleUsuario, TipoFeriado, Prisma } from "@prisma/client";
+import { calcularPrazo } from "../src/lib/prazos/calculo";
 
 const prisma = new PrismaClient();
 
@@ -147,10 +148,153 @@ async function seedTiposAtoPrazo() {
   console.log(`Semeados ${TIPOS_ATO_PRAZO.length} tipos de ato em TipoAtoPrazo.`);
 }
 
+function somarDiasCorridos(data: Date, quantidade: number): Date {
+  const resultado = new Date(data.getTime());
+  resultado.setUTCDate(resultado.getUTCDate() + quantidade);
+  return resultado;
+}
+
+// Dados ILUSTRATIVOS para exercitar a tela de confirmação (Fase 4) localmente
+// — não são um pipeline real de classificação de tipoAto (isso é o que o
+// texto do prompt chama de módulo futuro). O prazo de cada item é calculado
+// de verdade pelo motor puro da Fase 3 (calcularPrazo), só a
+// dataDisponibilizacao é escolhida a dedo, relativa a "hoje", para ilustrar
+// as três faixas do semáforo.
+const DEMO_ITENS: Array<{
+  sufixo: string;
+  cliente: string;
+  varaOrgao: string;
+  numeroCnj: string;
+  tipoAto: string;
+  prazoEmDobro: boolean;
+  offsetDiasDisponibilizacao: number;
+}> = [
+  {
+    sufixo: "1",
+    cliente: "Confecções Bela Vista Ltda.",
+    varaOrgao: "3ª Vara Cível de São Paulo",
+    numeroCnj: "10000011120268260100",
+    tipoAto: "embargos_de_declaracao",
+    prazoEmDobro: false,
+    offsetDiasDisponibilizacao: -6,
+  },
+  {
+    sufixo: "2",
+    cliente: "João Pereira da Silva",
+    varaOrgao: "5ª Vara Cível de São Paulo",
+    numeroCnj: "20000022220268260100",
+    tipoAto: "contestacao",
+    prazoEmDobro: false,
+    offsetDiasDisponibilizacao: -17,
+  },
+  {
+    sufixo: "3",
+    cliente: "Defensoria — Maria Oliveira Santos",
+    varaOrgao: "2ª Vara da Fazenda Pública de São Paulo",
+    numeroCnj: "30000033320268260100",
+    tipoAto: "apelacao",
+    prazoEmDobro: true,
+    offsetDiasDisponibilizacao: -25,
+  },
+];
+
+async function seedDadosDemonstracaoPainel() {
+  const jaSemeado = await prisma.processo.findUnique({ where: { id: "processo-demo-1" } });
+  if (jaSemeado) {
+    console.log("Dados de demonstração do painel já semeados, pulando.");
+    return;
+  }
+
+  const tiposAtoPorNome = new Map(TIPOS_ATO_PRAZO.map((tipo) => [tipo.tipoAto, tipo]));
+  const feriadosSp = await prisma.feriadoForense.findMany({
+    where: { uf: "SP", tribunal: null },
+    select: { data: true },
+  });
+  const hoje = new Date();
+  hoje.setUTCHours(0, 0, 0, 0);
+
+  for (const item of DEMO_ITENS) {
+    const configuracaoAto = tiposAtoPorNome.get(item.tipoAto);
+    if (!configuracaoAto) throw new Error(`tipoAto de demonstração sem mapeamento: ${item.tipoAto}`);
+
+    const processo = await prisma.processo.create({
+      data: {
+        id: `processo-demo-${item.sufixo}`,
+        escritorioId: "escritorio-demo",
+        numeroCnj: item.numeroCnj,
+        cliente: item.cliente,
+        varaOrgao: item.varaOrgao,
+        uf: "SP",
+        tribunal: "TJSP",
+        prazoEmDobro: item.prazoEmDobro,
+        parteRepresentada: "REU",
+      },
+    });
+
+    const numeroCnjFormatado = `${item.numeroCnj.slice(0, 7)}-${item.numeroCnj.slice(7, 9)}.${item.numeroCnj.slice(9, 13)}.${item.numeroCnj.slice(13, 14)}.${item.numeroCnj.slice(14, 16)}.${item.numeroCnj.slice(16, 20)}`;
+    const dataDisponibilizacao = somarDiasCorridos(hoje, item.offsetDiasDisponibilizacao);
+
+    const publicacao = await prisma.publicacao.create({
+      data: {
+        conteudo: `Intimação nos autos do processo ${numeroCnjFormatado}: fica ${item.cliente} intimado(a) para os fins de direito referente a ${configuracaoAto.descricao ?? item.tipoAto}.`,
+        dataDisponibilizacao,
+        fonte: "DJEN",
+        hashConteudo: `demo-publicacao-${item.sufixo}`,
+        status: "VINCULADA",
+        processoId: processo.id,
+        rawJson: { origem: "seed-demo" },
+      },
+    });
+
+    const diasPrazo = item.prazoEmDobro ? configuracaoAto.diasPrazo * 2 : configuracaoAto.diasPrazo;
+    const resultado = calcularPrazo({
+      dataDisponibilizacao,
+      diasPrazo,
+      contagemDiasUteis: configuracaoAto.contagemDiasUteis,
+      uf: "SP",
+      tribunal: "TJSP",
+      feriados: feriadosSp.map((feriado) => feriado.data),
+    });
+    if (!resultado.sucesso) {
+      throw new Error(`falha ao calcular prazo de demonstração ${item.sufixo}: ${resultado.motivo}`);
+    }
+
+    await prisma.prazo.create({
+      data: {
+        publicacaoId: publicacao.id,
+        processoId: processo.id,
+        tipoAto: item.tipoAto,
+        descricao: configuracaoAto.descricao ?? item.tipoAto,
+        dataInicioContagem: resultado.dataInicioContagem,
+        diasPrazo,
+        contagemDiasUteis: configuracaoAto.contagemDiasUteis,
+        dataFatal: resultado.dataFatal,
+        detalhesCalculo: resultado.passos as unknown as Prisma.InputJsonValue,
+        status: "PENDENTE_CONFIRMACAO",
+      },
+    });
+  }
+
+  await prisma.publicacao.create({
+    data: {
+      conteudo:
+        "Intimação referente ao processo 9999999-88.2026.8.26.0100, parte não localizada nos processos cadastrados.",
+      dataDisponibilizacao: somarDiasCorridos(hoje, -1),
+      fonte: "DJEN",
+      hashConteudo: "demo-publicacao-nao-identificada-1",
+      status: "NAO_IDENTIFICADA",
+      rawJson: { origem: "seed-demo" },
+    },
+  });
+
+  console.log(`Semeados ${DEMO_ITENS.length} prazos de demonstração + 1 publicação não identificada.`);
+}
+
 async function main() {
   await seedEscritorioEUsuario();
   await seedFeriadosNacionais();
   await seedTiposAtoPrazo();
+  await seedDadosDemonstracaoPainel();
 
   // TODO(feriados estaduais/tribunal): esta seed cobre apenas o calendário
   // NACIONAL (aplicável a toda UF, tribunal = null). Feriados estaduais,

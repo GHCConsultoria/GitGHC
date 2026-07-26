@@ -145,6 +145,10 @@ model Prazo {
   diasPrazo            Int
   contagemDiasUteis    Boolean
   dataFatal            DateTime
+  // Passo a passo produzido pelo motor de cálculo (Fase 3) no momento em que
+  // este Prazo foi criado — é o que a tela de confirmação mostra em "como
+  // foi calculada" para gerar confiança no valor proposto.
+  detalhesCalculo      Json?
 
   status       StatusPrazo @default(PENDENTE_CONFIRMACAO)
 
