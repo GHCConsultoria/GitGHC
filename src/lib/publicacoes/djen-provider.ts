@@ -64,9 +64,27 @@ export class DjenProvider implements PublicacaoProvider {
       url.searchParams.set("pagina", String(pagina));
       url.searchParams.set("itensPorPagina", String(ITENS_POR_PAGINA));
 
-      const resposta = await fetch(url, { headers: { Accept: "application/json" } });
+      // Sem um User-Agent "de navegador", a API respondeu 403 quando chamada
+      // de dentro da infraestrutura da Vercel (funciona normalmente de uma
+      // rede residencial/comercial comum — ver investigação em produção).
+      // Provável WAF/CloudFront bloqueando por assinatura de requisição, não
+      // necessariamente algo que este header sozinho resolve se for bloqueio
+      // por faixa de IP de provedor de nuvem.
+      const resposta = await fetch(url, {
+        headers: {
+          Accept: "application/json",
+          "User-Agent":
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+        },
+      });
       if (!resposta.ok) {
-        throw new Error(`DJEN respondeu ${resposta.status} na página ${pagina}`);
+        // Corpo do erro ajuda a diferenciar bloqueio de WAF/rate-limit de um
+        // erro de parâmetro — sem isso, um 403 e um 429 ficam indistinguíveis
+        // no painel de saúde.
+        const corpoErro = await resposta.text().catch(() => "");
+        throw new Error(
+          `DJEN respondeu ${resposta.status} na página ${pagina}${corpoErro ? `: ${corpoErro.slice(0, 300)}` : ""}`,
+        );
       }
 
       const corpo: unknown = await resposta.json();
