@@ -1,0 +1,204 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Tenant
+// ---------------------------------------------------------------------------
+
+model Escritorio {
+  id    String @id @default(cuid())
+  nome  String
+  oab   String
+  uf    String
+
+  usuarios   Usuario[]
+  processos  Processo[]
+
+  criadoEm  DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  @@map("escritorios")
+}
+
+enum RoleUsuario {
+  ADVOGADO
+  ASSISTENTE
+}
+
+model Usuario {
+  id           String      @id @default(cuid())
+  // id do usuário no Supabase Auth (auth.users.id)
+  authUserId   String      @unique
+  nome         String
+  email        String
+  role         RoleUsuario
+
+  escritorio   Escritorio  @relation(fields: [escritorioId], references: [id])
+  escritorioId String
+
+  prazosConfirmados Prazo[]         @relation("PrazoConfirmadoPor")
+  logsAuditoria     LogAuditoria[]
+
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  @@map("usuarios")
+}
+
+// ---------------------------------------------------------------------------
+// Processo
+// ---------------------------------------------------------------------------
+
+enum ParteRepresentada {
+  AUTOR
+  REU
+  TERCEIRO
+}
+
+model Processo {
+  id          String @id @default(cuid())
+  // apenas dígitos, sem máscara
+  numeroCnj   String
+  cliente     String
+  varaOrgao   String
+  uf          String
+  tribunal    String
+
+  prazoEmDobro       Boolean           @default(false)
+  parteRepresentada  ParteRepresentada
+
+  escritorio   Escritorio @relation(fields: [escritorioId], references: [id])
+  escritorioId String
+
+  publicacoes Publicacao[]
+  prazos      Prazo[]
+
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  // numeroCnj é único por escritório, não globalmente
+  @@unique([escritorioId, numeroCnj])
+  @@map("processos")
+}
+
+// ---------------------------------------------------------------------------
+// Publicacao
+// ---------------------------------------------------------------------------
+
+enum StatusPublicacao {
+  NAO_IDENTIFICADA
+  VINCULADA
+  DESCARTADA
+}
+
+model Publicacao {
+  id                  String   @id @default(cuid())
+  conteudo             String
+  dataDisponibilizacao DateTime
+  dataPublicacao       DateTime?
+  fonte                String
+  // hash sha256 do conteúdo bruto + identificador da fonte — garante idempotência
+  hashConteudo         String   @unique
+  status               StatusPublicacao @default(NAO_IDENTIFICADA)
+  rawJson              Json
+
+  processo   Processo? @relation(fields: [processoId], references: [id])
+  processoId String?
+
+  prazos     Prazo[]
+
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  @@map("publicacoes")
+}
+
+// ---------------------------------------------------------------------------
+// Prazo
+// ---------------------------------------------------------------------------
+
+enum StatusPrazo {
+  PENDENTE_CONFIRMACAO
+  CONFIRMADO
+  CUMPRIDO
+  DESCARTADO
+}
+
+model Prazo {
+  id  String @id @default(cuid())
+
+  publicacao   Publicacao @relation(fields: [publicacaoId], references: [id])
+  publicacaoId String
+
+  processo   Processo @relation(fields: [processoId], references: [id])
+  processoId String
+
+  tipoAto             String
+  descricao            String
+  dataInicioContagem   DateTime
+  diasPrazo            Int
+  contagemDiasUteis    Boolean
+  dataFatal            DateTime
+
+  status       StatusPrazo @default(PENDENTE_CONFIRMACAO)
+
+  confirmadoPor   Usuario? @relation("PrazoConfirmadoPor", fields: [confirmadoPorId], references: [id])
+  confirmadoPorId String?
+  confirmadoEm    DateTime?
+
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  @@map("prazos")
+}
+
+// ---------------------------------------------------------------------------
+// Auditoria
+// ---------------------------------------------------------------------------
+
+model LogAuditoria {
+  id         String   @id @default(cuid())
+
+  usuario    Usuario  @relation(fields: [usuarioId], references: [id])
+  usuarioId  String
+
+  entidade     String
+  entidadeId   String
+  acao         String
+  valorAnterior Json?
+  valorNovo     Json?
+
+  criadoEm   DateTime @default(now())
+
+  @@index([entidade, entidadeId])
+  @@map("logs_auditoria")
+}
+
+// ---------------------------------------------------------------------------
+// Feriados forenses
+// ---------------------------------------------------------------------------
+
+enum TipoFeriado {
+  FERIADO
+  SUSPENSAO
+  RECESSO
+}
+
+model FeriadoForense {
+  id        String   @id @default(cuid())
+  uf        String
+  // null = feriado nacional, aplica a todos os tribunais da UF
+  tribunal  String?
+  data      DateTime
+  descricao String
+  tipo      TipoFeriado
+
+  @@unique([uf, tribunal, data])
+  @@map("feriados_forenses")
+}
