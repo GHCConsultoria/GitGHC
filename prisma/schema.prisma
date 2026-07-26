@@ -156,6 +156,8 @@ model Prazo {
   confirmadoPorId String?
   confirmadoEm    DateTime?
 
+  alertasEnviados AlertaPrazoEnviado[]
+
   criadoEm     DateTime @default(now())
   atualizadoEm DateTime @updatedAt
 
@@ -242,4 +244,50 @@ model RevisaoFeriadosUf {
 
   @@unique([uf, ano])
   @@map("revisoes_feriados_uf")
+}
+
+// ---------------------------------------------------------------------------
+// Automação diária e alertas (Fase 5)
+// ---------------------------------------------------------------------------
+
+// Registro de cada execução do cron diário — é o que alimenta o painel de
+// saúde ("última execução, quantas publicações ingeridas..."). Uma linha por
+// execução, nunca sobrescrita.
+model ExecucaoCron {
+  id  String @id @default(cuid())
+
+  executadoEm                 DateTime @default(now())
+  publicacoesEncontradas      Int
+  publicacoesNovas            Int
+  publicacoesNaoIdentificadas Int
+  prazosCriados               Int
+  prazosParaRevisaoManual     Int
+  sucesso                     Boolean
+  erro                        String?
+
+  @@map("execucoes_cron")
+}
+
+enum TipoAlertaPrazo {
+  D5
+  D2
+  D1
+}
+
+// Dedup de alertas de vencimento (D-5/D-2/D-1) por prazo: sem isso, cada
+// execução diária do cron reenviaria o mesmo aviso enquanto o prazo
+// permanecer nessa faixa. O alerta de "prazos novos pendentes" não precisa
+// de dedup aqui porque só é dado no exato momento em que o Prazo é criado
+// (evento único, não recorrente).
+model AlertaPrazoEnviado {
+  id  String @id @default(cuid())
+
+  prazo   Prazo           @relation(fields: [prazoId], references: [id])
+  prazoId String
+  tipo    TipoAlertaPrazo
+
+  enviadoEm DateTime @default(now())
+
+  @@unique([prazoId, tipo])
+  @@map("alertas_prazo_enviados")
 }

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { obterUsuarioAtual } from "@/lib/auth";
 import { buscarFilaPrazosPendentes, buscarProcessosParaVinculacao, buscarPublicacoesNaoIdentificadas } from "@/lib/prazos/fila";
 import { PainelPrazos } from "@/components/prazos/PainelPrazos";
@@ -16,11 +17,16 @@ export default async function Home() {
 
   return (
     <main className="mx-auto flex min-h-screen max-w-4xl flex-col gap-10 p-6 sm:p-10">
-      <header>
-        <h1 className="text-2xl font-semibold">Conferência de publicações e prazos</h1>
-        <p className="mt-1 text-sm text-black/60 dark:text-white/60">
-          O sistema propõe o prazo; a confirmação é sempre sua. Nada vira definitivo sem você clicar em Confirmar.
-        </p>
+      <header className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold">Conferência de publicações e prazos</h1>
+          <p className="mt-1 text-sm text-black/60 dark:text-white/60">
+            O sistema propõe o prazo; a confirmação é sempre sua. Nada vira definitivo sem você clicar em Confirmar.
+          </p>
+        </div>
+        <Link href="/saude" className="whitespace-nowrap text-sm underline underline-offset-2">
+          Painel de saúde
+        </Link>
       </header>
 
       <section>

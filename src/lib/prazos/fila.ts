@@ -21,7 +21,7 @@ export interface ItemFilaPrazo {
  * já foi calculada considerando feriados/recesso pelo motor da Fase 3; isto
  * aqui só decide a cor, não recalcula o prazo. Negativo = prazo já vencido.
  */
-function contarDiasUteisAte(hoje: Date, dataFatal: Date): number {
+export function contarDiasUteisAte(hoje: Date, dataFatal: Date): number {
   if (dataFatal.getTime() < hoje.getTime()) {
     return -contarDiasUteisAte(dataFatal, hoje);
   }
