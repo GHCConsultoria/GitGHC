@@ -66,6 +66,12 @@ export default async function Home() {
             Feriados
           </Link>
           <Link
+            href="/usuarios"
+            className="border-b border-transparent pb-0.5 text-ink-soft transition-colors hover:border-brass hover:text-ink"
+          >
+            Usuários
+          </Link>
+          <Link
             href="/saude"
             className="border-b border-transparent pb-0.5 text-ink-soft transition-colors hover:border-brass hover:text-ink"
           >
