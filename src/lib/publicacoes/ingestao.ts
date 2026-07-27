@@ -2,7 +2,7 @@ import crypto from "node:crypto";
 import { Prisma, StatusPublicacao } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { extrairNumerosCnj } from "./cnj";
-import type { PublicacaoProvider } from "./provider";
+import type { PublicacaoBruta, PublicacaoProvider } from "./provider";
 
 export interface IngestaoParams {
   escritorioId: string;
@@ -27,10 +27,13 @@ function calcularHashConteudo(identificadorExterno: string, conteudo: string): s
 }
 
 /**
- * Busca publicações na fonte para o período, persiste as novas (idempotente
- * por hashConteudo) e tenta vincular cada uma a um Processo existente do
- * escritório pelo número CNJ extraído do texto. Não calcula prazo — isso é
- * responsabilidade da Fase 3.
+ * Busca publicações na fonte para o período (via provider — normalmente
+ * chamado do servidor) e delega a persistência para `processarPublicacoesBrutas`.
+ * O DJEN bloqueia chamadas vindas de infraestrutura de nuvem (ver
+ * src/lib/publicacoes/djen-provider.ts) — por isso existe também o caminho
+ * de `processarPublicacoesBrutas`, usado quando a busca já foi feita no
+ * navegador da pessoa (rede residencial/comercial, não bloqueada) e só a
+ * persistência roda no servidor.
  */
 export async function ingerirPublicacoes(
   params: IngestaoParams,
@@ -43,6 +46,18 @@ export async function ingerirPublicacoes(
     dataFim: params.dataFim,
   });
 
+  return processarPublicacoesBrutas(params.escritorioId, brutas);
+}
+
+/**
+ * Persiste publicações já buscadas (idempotente por hashConteudo) e tenta
+ * vincular cada uma a um Processo existente do escritório pelo número CNJ
+ * extraído do texto. Não calcula prazo — isso é responsabilidade da Fase 3.
+ */
+export async function processarPublicacoesBrutas(
+  escritorioId: string,
+  brutas: PublicacaoBruta[],
+): Promise<IngestaoResultado> {
   const resultado: IngestaoResultado = {
     encontradas: brutas.length,
     novas: 0,
@@ -53,7 +68,7 @@ export async function ingerirPublicacoes(
   };
 
   const processos = await prisma.processo.findMany({
-    where: { escritorioId: params.escritorioId },
+    where: { escritorioId },
     select: { id: true, numeroCnj: true },
   });
   const processoIdPorCnj = new Map(processos.map((processo) => [processo.numeroCnj, processo.id]));

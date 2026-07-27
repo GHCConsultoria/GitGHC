@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { prisma } from "@/lib/prisma";
 import { obterUsuarioAtual, UsuarioNaoAutenticadoError, UsuarioNaoCadastradoError } from "@/lib/auth";
 import { buscarFilaPrazosPendentes, buscarProcessosParaVinculacao, buscarPublicacoesNaoIdentificadas } from "@/lib/prazos/fila";
 import { PainelPrazos } from "@/components/prazos/PainelPrazos";
 import { PainelNaoIdentificadas } from "@/components/prazos/PainelNaoIdentificadas";
+import { BotaoBuscarAgora } from "@/components/publicacoes/BotaoBuscarAgora";
 import { sair } from "@/app/login/actions";
 
 export const dynamic = "force-dynamic";
@@ -30,10 +32,11 @@ export default async function Home() {
     throw erro;
   }
 
-  const [itensFila, publicacoesNaoIdentificadas, processos] = await Promise.all([
+  const [itensFila, publicacoesNaoIdentificadas, processos, escritorio] = await Promise.all([
     buscarFilaPrazosPendentes(usuario.escritorioId),
     buscarPublicacoesNaoIdentificadas(),
     buscarProcessosParaVinculacao(usuario.escritorioId),
+    prisma.escritorio.findUniqueOrThrow({ where: { id: usuario.escritorioId } }),
   ]);
 
   return (
@@ -78,6 +81,8 @@ export default async function Home() {
           </form>
         </nav>
       </header>
+
+      <BotaoBuscarAgora oab={escritorio.oab.replace(/\D/g, "")} uf={escritorio.uf} />
 
       <section>
         <div className="mb-6 flex items-baseline justify-between rule pt-6">

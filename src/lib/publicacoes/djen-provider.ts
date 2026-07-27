@@ -1,18 +1,18 @@
 import { z } from "zod";
 import type { BuscarPublicacoesParams, PublicacaoBruta, PublicacaoProvider } from "./provider";
 
-const DJEN_BASE_URL = "https://comunicaapi.pje.jus.br/api/v1/comunicacao";
-const ITENS_POR_PAGINA = 100;
+export const DJEN_BASE_URL = "https://comunicaapi.pje.jus.br/api/v1/comunicacao";
+export const DJEN_ITENS_POR_PAGINA = 100;
 
 // O contrato de resposta da API pública do DJEN (Comunica PJe) não é coberto
-// por um versionamento formal estável e não pôde ser confirmado ao vivo neste
-// ambiente (egress bloqueado para comunicaapi.pje.jus.br pela política deste
-// sandbox). O schema abaixo é deliberadamente tolerante — campos opcionais,
-// `.passthrough()` — e o item bruto inteiro é sempre preservado em `rawJson`.
-// ANTES DE CONFIAR NESTE ADAPTER EM PRODUÇÃO: rode uma busca real e confira
-// se os nomes de campo abaixo (em especial `texto`, `numero_processo` e as
-// variantes de data) batem com a resposta de verdade; ajuste `mapearItemDjen`
-// se não baterem.
+// por um versionamento formal estável. O schema abaixo é deliberadamente
+// tolerante — campos opcionais, `.passthrough()` — e o item bruto inteiro é
+// sempre preservado em `rawJson`. Confirmado ao vivo (fora deste ambiente,
+// que tem o host bloqueado): o envelope items/count e os parâmetros de
+// query batem; os nomes de campo dentro de cada item ainda não foram
+// validados contra uma publicação real (só testei com uma consulta sem
+// resultado) — ajuste `mapearItemDjen` se não baterem na primeira consulta
+// real com dados.
 const djenItemSchema = z
   .object({
     id: z.union([z.string(), z.number()]).optional(),
@@ -49,27 +49,47 @@ function mapearItemDjen(item: DjenItem): PublicacaoBruta {
   };
 }
 
-/** Provider concreto para o DJEN (Comunica PJe / CNJ), consultado por OAB. */
+/**
+ * Monta a URL de consulta para uma página. Exportada para ser reaproveitada
+ * tanto pelo `DjenProvider` (roda no servidor) quanto pela busca feita no
+ * navegador (ver `src/lib/publicacoes/buscar-no-navegador.ts`) — o DJEN
+ * bloqueia chamadas vindas de infraestrutura de nuvem, então a busca real em
+ * produção precisa sair da rede da própria pessoa.
+ */
+export function montarUrlBuscaDjen(params: BuscarPublicacoesParams, pagina: number): URL {
+  const url = new URL(DJEN_BASE_URL);
+  url.searchParams.set("numeroOab", params.oab);
+  url.searchParams.set("ufOab", params.uf);
+  url.searchParams.set("dataDisponibilizacaoInicio", params.dataInicio);
+  url.searchParams.set("dataDisponibilizacaoFim", params.dataFim);
+  url.searchParams.set("pagina", String(pagina));
+  url.searchParams.set("itensPorPagina", String(DJEN_ITENS_POR_PAGINA));
+  return url;
+}
+
+/** Valida e mapeia o corpo de uma resposta do DJEN para o formato interno. Lança se o formato for inesperado. */
+export function interpretarRespostaDjen(corpo: unknown): PublicacaoBruta[] {
+  const parsed = djenResponseSchema.safeParse(corpo);
+  if (!parsed.success) {
+    throw new Error(`Resposta do DJEN em formato inesperado: ${parsed.error.message}`);
+  }
+  const items = parsed.data.items ?? [];
+  return items.map(mapearItemDjen);
+}
+
+/**
+ * Provider concreto para o DJEN, consultado por OAB, rodando no servidor.
+ * Uso real em produção esbarra em bloqueio de rede da infraestrutura de
+ * nuvem (ver `buscar-no-navegador.ts` para o caminho que funciona).
+ */
 export class DjenProvider implements PublicacaoProvider {
-  async buscarPublicacoes({ oab, uf, dataInicio, dataFim }: BuscarPublicacoesParams): Promise<PublicacaoBruta[]> {
+  async buscarPublicacoes(params: BuscarPublicacoesParams): Promise<PublicacaoBruta[]> {
     const publicacoes: PublicacaoBruta[] = [];
     let pagina = 1;
 
     for (;;) {
-      const url = new URL(DJEN_BASE_URL);
-      url.searchParams.set("numeroOab", oab);
-      url.searchParams.set("ufOab", uf);
-      url.searchParams.set("dataDisponibilizacaoInicio", dataInicio);
-      url.searchParams.set("dataDisponibilizacaoFim", dataFim);
-      url.searchParams.set("pagina", String(pagina));
-      url.searchParams.set("itensPorPagina", String(ITENS_POR_PAGINA));
+      const url = montarUrlBuscaDjen(params, pagina);
 
-      // Sem um User-Agent "de navegador", a API respondeu 403 quando chamada
-      // de dentro da infraestrutura da Vercel (funciona normalmente de uma
-      // rede residencial/comercial comum — ver investigação em produção).
-      // Provável WAF/CloudFront bloqueando por assinatura de requisição, não
-      // necessariamente algo que este header sozinho resolve se for bloqueio
-      // por faixa de IP de provedor de nuvem.
       const resposta = await fetch(url, {
         headers: {
           Accept: "application/json",
@@ -78,9 +98,6 @@ export class DjenProvider implements PublicacaoProvider {
         },
       });
       if (!resposta.ok) {
-        // Corpo do erro ajuda a diferenciar bloqueio de WAF/rate-limit de um
-        // erro de parâmetro — sem isso, um 403 e um 429 ficam indistinguíveis
-        // no painel de saúde.
         const corpoErro = await resposta.text().catch(() => "");
         throw new Error(
           `DJEN respondeu ${resposta.status} na página ${pagina}${corpoErro ? `: ${corpoErro.slice(0, 300)}` : ""}`,
@@ -88,17 +105,12 @@ export class DjenProvider implements PublicacaoProvider {
       }
 
       const corpo: unknown = await resposta.json();
-      const parsed = djenResponseSchema.safeParse(corpo);
-      if (!parsed.success) {
-        throw new Error(`Resposta do DJEN em formato inesperado: ${parsed.error.message}`);
-      }
-
-      const items = parsed.data.items ?? [];
+      const items = interpretarRespostaDjen(corpo);
       if (items.length === 0) break;
 
-      publicacoes.push(...items.map(mapearItemDjen));
+      publicacoes.push(...items);
 
-      if (items.length < ITENS_POR_PAGINA) break;
+      if (items.length < DJEN_ITENS_POR_PAGINA) break;
       pagina += 1;
     }
 
