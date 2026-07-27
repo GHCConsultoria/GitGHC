@@ -41,7 +41,7 @@ const config: Config = {
         },
       },
       fontFamily: {
-        display: ["var(--font-display)", "ui-serif", "serif"],
+        display: ["var(--font-display)", "ui-monospace", "monospace"],
         body: ["var(--font-body)", "ui-sans-serif", "sans-serif"],
         data: ["var(--font-data)", "ui-monospace", "monospace"],
       },

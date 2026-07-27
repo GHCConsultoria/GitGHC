@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
-import { Fraunces, IBM_Plex_Mono, IBM_Plex_Sans } from "next/font/google";
+import { IBM_Plex_Sans, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 
-const fraunces = Fraunces({
+const jetbrainsMono = JetBrains_Mono({
   subsets: ["latin"],
   variable: "--font-display",
-  style: ["normal", "italic"],
+  weight: ["500", "600", "700"],
 });
 
 const plexSans = IBM_Plex_Sans({
@@ -14,7 +14,7 @@ const plexSans = IBM_Plex_Sans({
   weight: ["400", "500", "600"],
 });
 
-const plexMono = IBM_Plex_Mono({
+const plexMono = JetBrains_Mono({
   subsets: ["latin"],
   variable: "--font-data",
   weight: ["400", "500"],
@@ -32,7 +32,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt-BR">
-      <body className={`${fraunces.variable} ${plexSans.variable} ${plexMono.variable}`}>{children}</body>
+      <body className={`${jetbrainsMono.variable} ${plexSans.variable} ${plexMono.variable}`}>{children}</body>
     </html>
   );
 }
