@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { obterUsuarioAtual, UsuarioNaoAutenticadoError, UsuarioNaoCadastradoError } from "@/lib/auth";
 import { buscarUsuariosDoEscritorio } from "@/lib/usuarios/consultas";
 import { FormularioNovoUsuario } from "@/components/usuarios/FormularioNovoUsuario";
+import { FormularioTelefoneWhatsapp } from "@/components/usuarios/FormularioTelefoneWhatsapp";
 
 export const dynamic = "force-dynamic";
 
@@ -65,6 +66,7 @@ export default async function Usuarios() {
               <p className="font-display text-lg leading-snug">{usuario.nome}</p>
               <p className="font-data text-sm text-ink-soft">{usuario.email}</p>
               <p className="mt-1 text-xs text-ink-faint">{ROTULO_ROLE[usuario.role] ?? usuario.role}</p>
+              <FormularioTelefoneWhatsapp usuarioId={usuario.id} telefoneInicial={usuario.telefoneWhatsapp} />
             </li>
           ))}
         </ul>

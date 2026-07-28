@@ -2,9 +2,15 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { obterUsuarioAtual, UsuarioNaoAutenticadoError, UsuarioNaoCadastradoError } from "@/lib/auth";
-import { buscarFilaPrazosPendentes, buscarProcessosParaVinculacao, buscarPublicacoesNaoIdentificadas } from "@/lib/prazos/fila";
+import {
+  buscarFilaPrazosPendentes,
+  buscarPrazosConfirmadosRecentes,
+  buscarProcessosParaVinculacao,
+  buscarPublicacoesNaoIdentificadas,
+} from "@/lib/prazos/fila";
 import { PainelPrazos } from "@/components/prazos/PainelPrazos";
 import { PainelNaoIdentificadas } from "@/components/prazos/PainelNaoIdentificadas";
+import { PainelConfirmados } from "@/components/prazos/PainelConfirmados";
 import { BotaoBuscarAgora } from "@/components/publicacoes/BotaoBuscarAgora";
 import { sair } from "@/app/login/actions";
 
@@ -32,11 +38,12 @@ export default async function Home() {
     throw erro;
   }
 
-  const [itensFila, publicacoesNaoIdentificadas, processos, escritorio] = await Promise.all([
+  const [itensFila, publicacoesNaoIdentificadas, processos, escritorio, prazosConfirmados] = await Promise.all([
     buscarFilaPrazosPendentes(usuario.escritorioId),
     buscarPublicacoesNaoIdentificadas(),
     buscarProcessosParaVinculacao(usuario.escritorioId),
     prisma.escritorio.findUniqueOrThrow({ where: { id: usuario.escritorioId } }),
+    buscarPrazosConfirmadosRecentes(usuario.escritorioId),
   ]);
 
   return (
@@ -118,6 +125,20 @@ export default async function Home() {
           descarte.
         </p>
         <PainelNaoIdentificadas publicacoes={publicacoesNaoIdentificadas} processos={processos} />
+      </section>
+
+      <section>
+        <div className="mb-3 flex items-baseline justify-between rule pt-6">
+          <h2 className="eyebrow pt-4">Confirmados</h2>
+          <span className="font-display pt-4 text-2xl text-ink-faint">
+            {String(prazosConfirmados.length).padStart(2, "0")}
+          </span>
+        </div>
+        <p className="mb-6 max-w-2xl text-sm text-ink-soft">
+          Rascunho inicial de petição via IA, a partir do prazo confirmado — sempre um ponto de partida pra revisão,
+          nunca protocolado automaticamente.
+        </p>
+        <PainelConfirmados prazos={prazosConfirmados} />
       </section>
     </main>
   );

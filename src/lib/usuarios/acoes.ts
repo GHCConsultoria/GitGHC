@@ -81,3 +81,42 @@ export async function criarUsuario(input: unknown): Promise<ResultadoCriarUsuari
   revalidatePath("/usuarios");
   return { sucesso: true, email: parsed.data.email, senhaTemporaria };
 }
+
+export type ResultadoAcao = { sucesso: true } | { sucesso: false; erro: string };
+
+const atualizarTelefoneWhatsappSchema = z.object({
+  usuarioId: z.string().min(1),
+  // formato internacional (ex.: +5511999999999) ou vazio, pra remover o numero
+  telefoneWhatsapp: z
+    .string()
+    .trim()
+    .regex(/^\+[1-9]\d{7,14}$/, "use o formato internacional, ex.: +5511999999999")
+    .or(z.literal("")),
+});
+
+/**
+ * Define/remove o WhatsApp de um usuário do mesmo escritório de quem está
+ * logado (não precisa ser o próprio usuário — mesma confiança de
+ * escritório único que já existe em criarUsuario). Sem número, o usuário
+ * continua recebendo alerta só por e-mail.
+ */
+export async function atualizarTelefoneWhatsapp(input: unknown): Promise<ResultadoAcao> {
+  const parsed = atualizarTelefoneWhatsappSchema.safeParse(input);
+  if (!parsed.success) {
+    return { sucesso: false, erro: parsed.error.issues[0]?.message ?? "payload inválido" };
+  }
+
+  const usuarioAtual = await obterUsuarioAtual();
+  const alvo = await prisma.usuario.findUnique({ where: { id: parsed.data.usuarioId } });
+  if (!alvo || alvo.escritorioId !== usuarioAtual.escritorioId) {
+    return { sucesso: false, erro: "usuário não encontrado neste escritório" };
+  }
+
+  await prisma.usuario.update({
+    where: { id: alvo.id },
+    data: { telefoneWhatsapp: parsed.data.telefoneWhatsapp || null },
+  });
+
+  revalidatePath("/usuarios");
+  return { sucesso: true };
+}

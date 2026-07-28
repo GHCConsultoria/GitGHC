@@ -47,12 +47,16 @@ model Usuario {
   nome         String
   email        String
   role         RoleUsuario
+  // Formato internacional (ex.: +5511999999999). Null = usuário não optou
+  // por alertas via WhatsApp, continua recebendo só por e-mail.
+  telefoneWhatsapp String?
 
   escritorio   Escritorio  @relation(fields: [escritorioId], references: [id])
   escritorioId String
 
   prazosConfirmados Prazo[]         @relation("PrazoConfirmadoPor")
   logsAuditoria     LogAuditoria[]
+  rascunhosPeticaoGerados RascunhoPeticao[]
 
   criadoEm     DateTime @default(now())
   atualizadoEm DateTime @updatedAt
@@ -166,6 +170,7 @@ model Prazo {
   confirmadoEm    DateTime?
 
   alertasEnviados AlertaPrazoEnviado[]
+  rascunhosPeticao RascunhoPeticao[]
 
   criadoEm     DateTime @default(now())
   atualizadoEm DateTime @updatedAt
@@ -299,4 +304,29 @@ model AlertaPrazoEnviado {
 
   @@unique([prazoId, tipo])
   @@map("alertas_prazo_enviados")
+}
+
+// ---------------------------------------------------------------------------
+// Rascunho de petição com IA
+// ---------------------------------------------------------------------------
+
+// Rascunho gerado por IA a partir de um prazo CONFIRMADO — sempre um
+// ponto de partida pra revisão humana, nunca protocolado ou enviado
+// automaticamente por este sistema. Guardamos o histórico (não sobrescreve)
+// pra poder comparar gerações e saber quem pediu e quando.
+model RascunhoPeticao {
+  id  String @id @default(cuid())
+
+  prazo   Prazo  @relation(fields: [prazoId], references: [id])
+  prazoId String
+
+  conteudo String
+  modelo   String
+
+  criadoPor   Usuario @relation(fields: [criadoPorId], references: [id])
+  criadoPorId String
+
+  criadoEm DateTime @default(now())
+
+  @@map("rascunhos_peticao")
 }

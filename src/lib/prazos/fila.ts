@@ -67,6 +67,21 @@ export async function buscarPublicacoesNaoIdentificadas() {
   });
 }
 
+const prazoConfirmadoComRascunhoArgs = Prisma.validator<Prisma.PrazoDefaultArgs>()({
+  include: { processo: true, publicacao: true, rascunhosPeticao: { orderBy: { criadoEm: "desc" }, take: 1 } },
+});
+export type PrazoConfirmadoComRascunho = Prisma.PrazoGetPayload<typeof prazoConfirmadoComRascunhoArgs>;
+
+/** Prazos já confirmados mais recentemente — é onde faz sentido oferecer "gerar rascunho de petição com IA". */
+export async function buscarPrazosConfirmadosRecentes(escritorioId: string): Promise<PrazoConfirmadoComRascunho[]> {
+  return prisma.prazo.findMany({
+    where: { status: "CONFIRMADO", processo: { escritorioId } },
+    ...prazoConfirmadoComRascunhoArgs,
+    orderBy: { confirmadoEm: "desc" },
+    take: 20,
+  });
+}
+
 /** Lista enxuta de processos do escritório, para o seletor de vínculo manual. */
 export async function buscarProcessosParaVinculacao(escritorioId: string) {
   return prisma.processo.findMany({

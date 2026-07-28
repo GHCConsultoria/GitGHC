@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { contarDiasUteisAte } from "@/lib/prazos/fila";
 import { paraDataCalendarioSaoPaulo } from "@/lib/prazos/calculo";
 import { obterEmailSender } from "./email";
+import { obterWhatsappSender } from "./whatsapp";
 
 /**
  * Avisa os usuários de cada escritório sobre os prazos recém-criados nesta
@@ -28,6 +29,7 @@ export async function enviarAlertasNovosPendentes(prazosCriadosIds: string[]): P
   }
 
   const emailSender = obterEmailSender();
+  const whatsappSender = obterWhatsappSender();
   let emailsEnviados = 0;
 
   for (const prazosDoEscritorio of Array.from(idsPorEscritorio.values())) {
@@ -50,6 +52,13 @@ export async function enviarAlertasNovosPendentes(prazosCriadosIds: string[]): P
         corpo,
       });
       emailsEnviados += 1;
+
+      if (usuario.telefoneWhatsapp) {
+        await whatsappSender.enviarAlerta({
+          paraTelefone: usuario.telefoneWhatsapp,
+          quantidade: prazosDoEscritorio.length,
+        });
+      }
     }
   }
 
@@ -76,6 +85,7 @@ export async function enviarAlertasDeVencimentoProximo(): Promise<number> {
   });
 
   const emailSender = obterEmailSender();
+  const whatsappSender = obterWhatsappSender();
   let emailsEnviados = 0;
 
   for (const prazo of prazosConfirmados) {
@@ -101,6 +111,10 @@ export async function enviarAlertasDeVencimentoProximo(): Promise<number> {
         corpo,
       });
       emailsEnviados += 1;
+
+      if (usuario.telefoneWhatsapp) {
+        await whatsappSender.enviarAlerta({ paraTelefone: usuario.telefoneWhatsapp, quantidade: 1 });
+      }
     }
 
     await prisma.alertaPrazoEnviado.create({ data: { prazoId: prazo.id, tipo: alerta.tipo } });
