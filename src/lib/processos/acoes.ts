@@ -18,7 +18,13 @@ const criarProcessoSchema = z.object({
   tribunal: z.string().trim().min(1, "informe o tribunal"),
   parteRepresentada: z.nativeEnum(ParteRepresentada),
   prazoEmDobro: z.boolean(),
+  // presente quando o cadastro nasce do fluxo "cadastrar a partir desta
+  // publicação não identificada" — nesse caso vincula a publicação ao
+  // processo recém-criado na mesma transação.
+  publicacaoId: z.string().min(1).optional(),
 });
+
+class PublicacaoIndisponivelError extends Error {}
 
 /**
  * Cadastro de processo pelo próprio escritório (não existia nenhuma via de
@@ -43,32 +49,60 @@ export async function criarProcesso(input: unknown): Promise<ResultadoAcao> {
   const usuario = await obterUsuarioAtual();
 
   try {
-    const processo = await prisma.processo.create({
-      data: {
-        escritorioId: usuario.escritorioId,
-        numeroCnj: numeroCnjNormalizado,
-        cliente: parsed.data.cliente,
-        varaOrgao: parsed.data.varaOrgao,
-        uf: parsed.data.uf,
-        tribunal: parsed.data.tribunal,
-        parteRepresentada: parsed.data.parteRepresentada,
-        prazoEmDobro: parsed.data.prazoEmDobro,
-      },
-    });
+    await prisma.$transaction(async (tx) => {
+      const processo = await tx.processo.create({
+        data: {
+          escritorioId: usuario.escritorioId,
+          numeroCnj: numeroCnjNormalizado,
+          cliente: parsed.data.cliente,
+          varaOrgao: parsed.data.varaOrgao,
+          uf: parsed.data.uf,
+          tribunal: parsed.data.tribunal,
+          parteRepresentada: parsed.data.parteRepresentada,
+          prazoEmDobro: parsed.data.prazoEmDobro,
+        },
+      });
 
-    await prisma.logAuditoria.create({
-      data: {
-        usuarioId: usuario.id,
-        entidade: "Processo",
-        entidadeId: processo.id,
-        acao: "CRIAR",
-        valorAnterior: Prisma.JsonNull,
-        valorNovo: { numeroCnj: processo.numeroCnj, cliente: processo.cliente },
-      },
+      await tx.logAuditoria.create({
+        data: {
+          usuarioId: usuario.id,
+          entidade: "Processo",
+          entidadeId: processo.id,
+          acao: "CRIAR",
+          valorAnterior: Prisma.JsonNull,
+          valorNovo: { numeroCnj: processo.numeroCnj, cliente: processo.cliente },
+        },
+      });
+
+      if (parsed.data.publicacaoId) {
+        const publicacao = await tx.publicacao.findUnique({ where: { id: parsed.data.publicacaoId } });
+        if (!publicacao || publicacao.status !== "NAO_IDENTIFICADA") {
+          throw new PublicacaoIndisponivelError();
+        }
+
+        await tx.publicacao.update({
+          where: { id: publicacao.id },
+          data: { status: "VINCULADA", processoId: processo.id },
+        });
+
+        await tx.logAuditoria.create({
+          data: {
+            usuarioId: usuario.id,
+            entidade: "Publicacao",
+            entidadeId: publicacao.id,
+            acao: "VINCULAR_MANUAL",
+            valorAnterior: { status: publicacao.status, processoId: publicacao.processoId },
+            valorNovo: { status: "VINCULADA", processoId: processo.id },
+          },
+        });
+      }
     });
   } catch (erro) {
     if (erro instanceof Prisma.PrismaClientKnownRequestError && erro.code === "P2002") {
       return { sucesso: false, erro: "já existe um processo com este número CNJ neste escritório" };
+    }
+    if (erro instanceof PublicacaoIndisponivelError) {
+      return { sucesso: false, erro: "esta publicação já não está mais disponível para vínculo" };
     }
     throw erro;
   }

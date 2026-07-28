@@ -26,8 +26,19 @@ const ESTADO_INICIAL: Campos = {
   prazoEmDobro: false,
 };
 
-export function FormularioNovoProcesso() {
-  const [campos, setCampos] = useState<Campos>(ESTADO_INICIAL);
+export function FormularioNovoProcesso({
+  valoresIniciais,
+  publicacaoId,
+  aoCadastrar,
+}: {
+  /** Pré-preenchimento (ex.: sugestão extraída do texto de uma publicação) — sempre editável antes de salvar. */
+  valoresIniciais?: Partial<Campos>;
+  /** Presente quando o cadastro nasce de uma publicação NAO_IDENTIFICADA: vincula ao ser criado. */
+  publicacaoId?: string;
+  aoCadastrar?: () => void;
+} = {}) {
+  const estadoInicial = { ...ESTADO_INICIAL, ...valoresIniciais };
+  const [campos, setCampos] = useState<Campos>(estadoInicial);
   const [erro, setErro] = useState<string | null>(null);
   const [sucesso, setSucesso] = useState(false);
   const [pendente, iniciarTransicao] = useTransition();
@@ -37,13 +48,14 @@ export function FormularioNovoProcesso() {
     setErro(null);
     setSucesso(false);
     iniciarTransicao(async () => {
-      const resultado = await criarProcesso(campos);
+      const resultado = await criarProcesso({ ...campos, publicacaoId });
       if (!resultado.sucesso) {
         setErro(resultado.erro);
         return;
       }
       setSucesso(true);
-      setCampos(ESTADO_INICIAL);
+      setCampos(estadoInicial);
+      aoCadastrar?.();
     });
   }
 
@@ -136,7 +148,11 @@ export function FormularioNovoProcesso() {
       </label>
 
       {erro && <p className="text-sm text-urgent sm:col-span-2">{erro}</p>}
-      {sucesso && <p className="text-sm text-calm sm:col-span-2">Processo cadastrado.</p>}
+      {sucesso && (
+        <p className="text-sm text-calm sm:col-span-2">
+          {publicacaoId ? "Processo cadastrado e publicação vinculada." : "Processo cadastrado."}
+        </p>
+      )}
 
       <div className="sm:col-span-2">
         <button

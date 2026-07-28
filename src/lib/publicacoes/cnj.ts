@@ -22,3 +22,9 @@ export function extrairNumerosCnj(texto: string): string[] {
   const normalizados = candidatos.map(normalizarNumeroCnj).filter((digitos) => digitos.length === 20);
   return Array.from(new Set(normalizados));
 }
+
+/** Formata 20 dígitos normalizados de volta no formato NNNNNNN-DD.AAAA.J.TR.OOOO. */
+export function formatarNumeroCnjParaExibicao(digitos: string): string {
+  if (digitos.length !== 20) return digitos;
+  return `${digitos.slice(0, 7)}-${digitos.slice(7, 9)}.${digitos.slice(9, 13)}.${digitos.slice(13, 14)}.${digitos.slice(14, 16)}.${digitos.slice(16, 20)}`;
+}

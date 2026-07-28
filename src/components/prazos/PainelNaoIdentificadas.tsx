@@ -1,9 +1,12 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import type { Publicacao } from "@prisma/client";
 import { vincularPublicacaoAProcesso } from "@/lib/prazos/acoes";
 import { formatarDataCalendario } from "@/lib/formatacao";
+import { extrairCandidatosDeProcesso } from "@/lib/publicacoes/extrair-candidatos";
+import { formatarNumeroCnjParaExibicao } from "@/lib/publicacoes/cnj";
+import { FormularioNovoProcesso } from "@/components/processos/FormularioNovoProcesso";
 
 interface ProcessoResumo {
   id: string;
@@ -48,6 +51,10 @@ function ItemNaoIdentificada({
   const [processoId, setProcessoId] = useState("");
   const [erro, setErro] = useState<string | null>(null);
   const [pendente, iniciarTransicao] = useTransition();
+  const [mostrarCadastro, setMostrarCadastro] = useState(false);
+
+  const candidatos = useMemo(() => extrairCandidatosDeProcesso(publicacao.conteudo), [publicacao.conteudo]);
+  const temSugestao = Boolean(candidatos.numeroCnj || candidatos.uf || candidatos.clienteSugerido);
 
   function vincular() {
     if (!processoId) {
@@ -89,9 +96,46 @@ function ItemNaoIdentificada({
         >
           Vincular
         </button>
+        <span className="text-xs text-ink-faint">ou</span>
+        <button
+          type="button"
+          onClick={() => setMostrarCadastro((valor) => !valor)}
+          className="inline-flex items-center gap-1.5 text-sm font-medium text-ink-soft transition-colors hover:text-brass"
+        >
+          <svg
+            viewBox="0 0 10 10"
+            className={`h-2.5 w-2.5 transition-transform duration-300 ${mostrarCadastro ? "rotate-180" : ""}`}
+            fill="none"
+          >
+            <path d="M1.5 3.5 5 7l3.5-3.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          Cadastrar processo novo{temSugestao ? " (sugestões preenchidas)" : ""}
+        </button>
       </div>
 
       {erro && <p className="mt-2 text-sm text-urgent">{erro}</p>}
+
+      <div className={`expand ${mostrarCadastro ? "is-open" : ""}`}>
+        <div>
+          <div className="mt-4 border-t border-rule pt-4">
+            {temSugestao && (
+              <p className="mb-3 text-xs text-ink-faint">
+                Campos abaixo foram sugeridos a partir do texto da publicação — confira antes de salvar.
+              </p>
+            )}
+            <FormularioNovoProcesso
+              publicacaoId={publicacao.id}
+              valoresIniciais={{
+                numeroCnj: candidatos.numeroCnj ? formatarNumeroCnjParaExibicao(candidatos.numeroCnj) : "",
+                cliente: candidatos.clienteSugerido ?? "",
+                uf: candidatos.uf ?? "SP",
+                tribunal: candidatos.tribunal ?? "",
+              }}
+              aoCadastrar={() => setMostrarCadastro(false)}
+            />
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
