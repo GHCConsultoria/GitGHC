@@ -1,8 +1,11 @@
 import Link from "next/link";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { obterUsuarioAtual, UsuarioNaoAutenticadoError, UsuarioNaoCadastradoError } from "@/lib/auth";
 import { FormularioEditarEscritorio } from "@/components/escritorio/FormularioEditarEscritorio";
+import { PainelIntegracaoCalendario } from "@/components/escritorio/PainelIntegracaoCalendario";
+import { garantirTokenFeedCalendario } from "@/lib/calendario/consultas";
 
 export const dynamic = "force-dynamic";
 
@@ -29,6 +32,11 @@ export default async function Escritorio() {
   }
 
   const escritorio = await prisma.escritorio.findUniqueOrThrow({ where: { id: usuario.escritorioId } });
+  const token = await garantirTokenFeedCalendario(usuario.escritorioId);
+  const cabecalhos = await headers();
+  const host = cabecalhos.get("host") ?? "localhost:3000";
+  const protocolo = host.startsWith("localhost") || host.startsWith("127.0.0.1") ? "http" : "https";
+  const urlFeedCalendario = `${protocolo}://${host}/api/calendario/${token}/prazos.ics`;
 
   return (
     <main className="mx-auto flex min-h-screen max-w-2xl flex-col gap-10 px-6 py-10 sm:px-10 sm:py-14">
@@ -45,6 +53,11 @@ export default async function Escritorio() {
       </header>
 
       <FormularioEditarEscritorio nomeInicial={escritorio.nome} oabInicial={escritorio.oab} ufInicial={escritorio.uf} />
+
+      <section>
+        <h2 className="eyebrow mb-4 rule pt-6">Integração com calendário</h2>
+        <PainelIntegracaoCalendario urlFeedInicial={urlFeedCalendario} />
+      </section>
     </main>
   );
 }

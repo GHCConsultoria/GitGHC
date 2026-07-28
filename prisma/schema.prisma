@@ -21,6 +21,11 @@ model Escritorio {
   oab   String
   uf    String
 
+  // Token do link secreto do feed ICS (calendário) — null até a primeira
+  // vez que a tela /escritorio precisa dele (gerado sob demanda, não na
+  // criação do escritório). Regenerável para revogar um link vazado.
+  calendarioFeedToken String? @unique
+
   usuarios   Usuario[]
   processos  Processo[]
 
