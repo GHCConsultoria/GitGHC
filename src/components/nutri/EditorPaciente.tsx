@@ -81,7 +81,7 @@ export function EditorPaciente({ pacienteId, tokenInicial, metasIniciais }: Prop
             <button
               type="button"
               onClick={() => navigator.clipboard.writeText(link)}
-              className="rounded-sm border border-rule px-3 py-2 text-xs text-ink-soft transition-colors hover:border-brass hover:text-ink"
+              className="rounded-sm border border-rule px-3 py-2 text-xs text-ink-soft transition-colors hover:border-sheipe hover:text-ink"
             >
               Copiar
             </button>
@@ -120,7 +120,7 @@ export function EditorPaciente({ pacienteId, tokenInicial, metasIniciais }: Prop
           <button
             type="submit"
             disabled={pendente}
-            className="rounded-sm bg-brass px-4 py-2 text-sm font-medium text-brass-on shadow-sm transition-colors hover:bg-brass-deep disabled:opacity-50"
+            className="rounded-sm bg-sheipe px-4 py-2 text-sm font-medium text-sheipe-on shadow-sm transition-colors hover:bg-sheipe-deep disabled:opacity-50"
           >
             {pendente ? "Salvando…" : "Salvar metas"}
           </button>
@@ -149,7 +149,7 @@ function CampoMeta({ label, valor, onChange }: { label: string; valor: string; o
         min={0}
         value={valor}
         onChange={(evento) => onChange(evento.target.value)}
-        className="w-full rounded-sm border border-rule bg-paper px-3 py-2 text-sm outline-none focus:border-brass"
+        className="w-full rounded-sm border border-rule bg-paper px-3 py-2 text-sm outline-none focus:border-sheipe"
       />
     </label>
   );

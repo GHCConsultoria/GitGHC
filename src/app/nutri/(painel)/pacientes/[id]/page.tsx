@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { obterNutricionistaAtual } from "@/lib/nutri/auth";
 import { buscarPacientePorId } from "@/lib/nutri/consultas";
 import { EditorPaciente } from "@/components/nutri/EditorPaciente";
+import { NoSheipeLogo } from "@/components/nutri/NoSheipeLogo";
 
 export default async function EditarPaciente({ params }: { params: { id: string } }) {
   const nutricionista = await obterNutricionistaAtual();
@@ -13,10 +14,12 @@ export default async function EditarPaciente({ params }: { params: { id: string 
 
   return (
     <main className="mx-auto max-w-2xl px-6 py-16">
-      <Link href="/nutri" className="text-sm text-ink-soft transition-colors hover:text-brass">
+      <Link href="/nutri" className="text-sm text-ink-soft transition-colors hover:text-sheipe">
         ← voltar para o painel
       </Link>
-      <p className="eyebrow mt-6 mb-2">NoSheipe</p>
+      <div className="mt-6 mb-2">
+        <NoSheipeLogo size={22} />
+      </div>
       <h1 className="font-display text-3xl">{paciente.nome}</h1>
 
       <div className="mt-8">

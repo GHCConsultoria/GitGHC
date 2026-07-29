@@ -57,3 +57,16 @@ completo na tarefa que o originou.
 - Não-negociáveis do domínio: o app nunca prescreve (metas sempre vêm do
   nutricionista); sem consentimento LGPD (`consentimentoEm`) o paciente não registra
   nada; registro de refeição é idempotente por `clienteRegistroId`.
+- **Identidade visual**: logo verde própria (`src/components/nutri/NoSheipeLogo.tsx`,
+  ícones em `public/icons/`), com uma paleta (`--color-sheipe`) separada do ciano do
+  sistema jurídico (`--color-brass`) — trocar uma não afeta a outra. Na tela usada no
+  computador (onde se prescreve/acompanha), o rótulo é neutro ("Painel profissional"),
+  sem usar a palavra "nutricionista" nem "personal" no texto da interface.
+- **Tema claro/escuro**: segue a preferência do sistema por padrão; o botão flutuante
+  (`src/components/nutri/ThemeToggle.tsx`) deixa escolher manualmente, salvo em
+  `localStorage` e aplicado antes do primeiro paint (sem flash). Overrides de tema vivem
+  em `globals.css` como `:root[data-theme="light"|"dark"]`, aditivos — não mudam o
+  comportamento do sistema jurídico.
+- **PWA do paciente**: cada paciente tem um manifesto próprio
+  (`/p/[token]/manifest.json`), então instalar na tela inicial abre direto no link
+  daquele paciente, não num app genérico.

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useFormState, useFormStatus } from "react-dom";
 import { entrarNutricionista, cadastrarNutricionista, type EstadoLoginNutri } from "./actions";
+import { NoSheipeLogo } from "@/components/nutri/NoSheipeLogo";
 
 const ESTADO_INICIAL: EstadoLoginNutri = {};
 
@@ -19,11 +20,11 @@ export default function LoginNutri() {
         className="hidden flex-col justify-between p-12 sm:flex"
         style={{ background: "var(--signature-ink)", color: "var(--signature-paper)" }}
       >
-        <p className="eyebrow" style={{ color: "var(--signature-paper)", opacity: 0.5 }}>
-          NoSheipe
-        </p>
+        <div style={{ color: "var(--signature-paper)", opacity: 0.85 }}>
+          <NoSheipeLogo size={26} />
+        </div>
         <blockquote className="font-display text-3xl leading-snug">
-          O nutricionista prescreve<span style={{ color: "var(--signature-brass)" }}>,</span> o app só acompanha.
+          Você prescreve<span style={{ color: "var(--signature-sheipe)" }}>,</span> o app só acompanha.
         </blockquote>
         <p className="max-w-sm text-sm" style={{ color: "var(--signature-paper)", opacity: 0.6 }}>
           Metas vêm sempre de você. O paciente registra o que comeu entre consultas e você vê a aderência num só
@@ -33,22 +34,24 @@ export default function LoginNutri() {
 
       <section className="flex flex-col justify-center px-6 py-16 sm:px-16">
         <div className="mx-auto w-full max-w-sm">
-          <p className="eyebrow sm:hidden">Nutrição · demo</p>
+          <div className="sm:hidden">
+            <NoSheipeLogo size={24} />
+          </div>
           <h1 className="font-display mt-1 text-3xl">{modo === "entrar" ? "Entrar" : "Criar conta"}</h1>
-          <p className="mt-2 text-sm text-ink-soft">Painel do nutricionista.</p>
+          <p className="mt-2 text-sm text-ink-soft">Painel profissional.</p>
 
           <div className="mt-6 flex gap-1 rounded-sm border border-rule p-1 text-sm">
             <button
               type="button"
               onClick={() => setModo("entrar")}
-              className={`flex-1 rounded-sm px-3 py-1.5 transition-colors ${modo === "entrar" ? "bg-brass text-brass-on" : "text-ink-soft"}`}
+              className={`flex-1 rounded-sm px-3 py-1.5 transition-colors ${modo === "entrar" ? "bg-sheipe text-sheipe-on" : "text-ink-soft"}`}
             >
               Entrar
             </button>
             <button
               type="button"
               onClick={() => setModo("cadastrar")}
-              className={`flex-1 rounded-sm px-3 py-1.5 transition-colors ${modo === "cadastrar" ? "bg-brass text-brass-on" : "text-ink-soft"}`}
+              className={`flex-1 rounded-sm px-3 py-1.5 transition-colors ${modo === "cadastrar" ? "bg-sheipe text-sheipe-on" : "text-ink-soft"}`}
             >
               Criar conta
             </button>
@@ -70,7 +73,7 @@ export default function LoginNutri() {
                   name="nome"
                   required
                   autoComplete="name"
-                  className="w-full rounded-sm border border-rule bg-paper-raised px-3 py-2.5 text-sm outline-none transition-colors focus:border-brass"
+                  className="w-full rounded-sm border border-rule bg-paper-raised px-3 py-2.5 text-sm outline-none transition-colors focus:border-sheipe"
                 />
               </label>
               <label className="text-sm">
@@ -78,7 +81,7 @@ export default function LoginNutri() {
                 <input
                   type="text"
                   name="crn"
-                  className="w-full rounded-sm border border-rule bg-paper-raised px-3 py-2.5 text-sm outline-none transition-colors focus:border-brass"
+                  className="w-full rounded-sm border border-rule bg-paper-raised px-3 py-2.5 text-sm outline-none transition-colors focus:border-sheipe"
                 />
               </label>
               <CampoEmail />
@@ -102,7 +105,7 @@ function CampoEmail() {
         name="email"
         required
         autoComplete="email"
-        className="w-full rounded-sm border border-rule bg-paper-raised px-3 py-2.5 text-sm outline-none transition-colors focus:border-brass"
+        className="w-full rounded-sm border border-rule bg-paper-raised px-3 py-2.5 text-sm outline-none transition-colors focus:border-sheipe"
       />
     </label>
   );
@@ -118,7 +121,7 @@ function CampoSenha({ autoComplete }: { autoComplete: string }) {
         required
         minLength={6}
         autoComplete={autoComplete}
-        className="w-full rounded-sm border border-rule bg-paper-raised px-3 py-2.5 text-sm outline-none transition-colors focus:border-brass"
+        className="w-full rounded-sm border border-rule bg-paper-raised px-3 py-2.5 text-sm outline-none transition-colors focus:border-sheipe"
       />
     </label>
   );
@@ -130,7 +133,7 @@ function Botao({ rotulo, rotuloCarregando }: { rotulo: string; rotuloCarregando:
     <button
       type="submit"
       disabled={pending}
-      className="mt-2 rounded-sm bg-brass px-4 py-2.5 text-sm font-medium text-brass-on shadow-sm transition-colors hover:bg-brass-deep disabled:opacity-50"
+      className="mt-2 rounded-sm bg-sheipe px-4 py-2.5 text-sm font-medium text-sheipe-on shadow-sm transition-colors hover:bg-sheipe-deep disabled:opacity-50"
     >
       {pending ? rotuloCarregando : rotulo}
     </button>

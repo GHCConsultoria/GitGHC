@@ -1,3 +1,4 @@
+import type { Metadata, Viewport } from "next";
 import { notFound } from "next/navigation";
 import { buscarPacientePorToken, buscarRegistrosDeHoje } from "@/lib/nutri/consultas";
 import { calcularSaldoDoDia } from "@/lib/nutri/aderencia";
@@ -5,6 +6,22 @@ import { ConsentimentoPaciente } from "@/components/nutri/ConsentimentoPaciente"
 import { RegistroPaciente } from "@/components/nutri/RegistroPaciente";
 
 export const dynamic = "force-dynamic";
+
+export const viewport: Viewport = {
+  themeColor: "#16a34a",
+};
+
+export async function generateMetadata({ params }: { params: { token: string } }): Promise<Metadata> {
+  return {
+    title: "NoSheipe",
+    manifest: `/p/${params.token}/manifest.json`,
+    appleWebApp: { capable: true, statusBarStyle: "black-translucent", title: "NoSheipe" },
+    icons: {
+      icon: "/icons/nosheipe-192.png",
+      apple: "/icons/nosheipe-180.png",
+    },
+  };
+}
 
 const FORMATADOR_HORA = new Intl.DateTimeFormat("pt-BR", {
   timeZone: "America/Sao_Paulo",

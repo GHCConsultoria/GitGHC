@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
 import { reconhecimentoDeFalaDisponivel, useReconhecimentoDeFala } from "./useReconhecimentoDeFala";
+import { NoSheipeLogo } from "./NoSheipeLogo";
 
 interface RegistroExibicao {
   id: string;
@@ -86,7 +87,9 @@ export function RegistroPaciente({ token, nomePaciente, saldo, registros }: Prop
 
   return (
     <main className="mx-auto max-w-md px-6 py-10">
-      <p className="eyebrow mb-2">NoSheipe</p>
+      <div className="mb-3">
+        <NoSheipeLogo size={24} />
+      </div>
       <h1 className="font-display text-2xl">Olá, {nomePaciente}</h1>
 
       <section className="mt-6 grid grid-cols-2 gap-3">
@@ -107,7 +110,7 @@ export function RegistroPaciente({ token, nomePaciente, saldo, registros }: Prop
             }}
             rows={3}
             placeholder="ex.: 150g de peito de frango grelhado com arroz e salada"
-            className="w-full rounded-sm border border-rule bg-paper px-3 py-2 text-sm outline-none focus:border-brass"
+            className="w-full rounded-sm border border-rule bg-paper px-3 py-2 text-sm outline-none focus:border-sheipe"
           />
         </label>
 
@@ -118,7 +121,7 @@ export function RegistroPaciente({ token, nomePaciente, saldo, registros }: Prop
             className={`self-start rounded-sm border px-3 py-1.5 text-xs transition-colors ${
               gravando
                 ? "border-urgent-line text-urgent"
-                : "border-rule text-ink-soft hover:border-brass hover:text-ink"
+                : "border-rule text-ink-soft hover:border-sheipe hover:text-ink"
             }`}
           >
             {gravando ? "⏹ Parar gravação" : "🎙️ Gravar áudio"}
@@ -130,7 +133,7 @@ export function RegistroPaciente({ token, nomePaciente, saldo, registros }: Prop
         <button
           type="submit"
           disabled={pendente || gravando || !texto.trim()}
-          className="self-start rounded-sm bg-brass px-4 py-2 text-sm font-medium text-brass-on shadow-sm transition-colors hover:bg-brass-deep disabled:opacity-50"
+          className="self-start rounded-sm bg-sheipe px-4 py-2 text-sm font-medium text-sheipe-on shadow-sm transition-colors hover:bg-sheipe-deep disabled:opacity-50"
         >
           {pendente ? "Estimando macros…" : "Registrar"}
         </button>
@@ -169,7 +172,7 @@ function CartaoMacro({ rotulo, saldo }: { rotulo: string; saldo: SaldoMacro }) {
       </p>
       <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-rule">
         <div
-          className={`h-full ${estourou ? "bg-urgent" : "bg-brass"}`}
+          className={`h-full ${estourou ? "bg-urgent" : "bg-sheipe"}`}
           style={{ width: `${Math.min(saldo.percentual, 100)}%` }}
         />
       </div>

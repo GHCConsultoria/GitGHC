@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { obterNutricionistaAtual } from "@/lib/nutri/auth";
 import { buscarPacientesComAderencia } from "@/lib/nutri/consultas";
+import { NoSheipeLogo } from "@/components/nutri/NoSheipeLogo";
 import { sairNutricionista } from "../login/actions";
 
 /**
@@ -16,13 +17,15 @@ export default async function PainelNutri() {
     <main className="mx-auto max-w-2xl px-6 py-16">
       <div className="flex items-start justify-between">
         <div>
-          <p className="eyebrow mb-2">NoSheipe</p>
+          <div className="mb-3">
+            <NoSheipeLogo size={24} />
+          </div>
           <h1 className="font-display text-3xl">Olá, {nutricionista.nome}</h1>
         </div>
         <form action={sairNutricionista}>
           <button
             type="submit"
-            className="rounded-sm border border-rule px-3 py-1.5 text-xs text-ink-soft transition-colors hover:border-brass hover:text-ink"
+            className="rounded-sm border border-rule px-3 py-1.5 text-xs text-ink-soft transition-colors hover:border-sheipe hover:text-ink"
           >
             Sair
           </button>
@@ -38,7 +41,7 @@ export default async function PainelNutri() {
         {vagasRestantes > 0 ? (
           <Link
             href="/nutri/pacientes/novo"
-            className="inline-block rounded-sm bg-brass px-4 py-2 text-sm font-medium text-brass-on shadow-sm transition-colors hover:bg-brass-deep"
+            className="inline-block rounded-sm bg-sheipe px-4 py-2 text-sm font-medium text-sheipe-on shadow-sm transition-colors hover:bg-sheipe-deep"
           >
             + Novo paciente
           </Link>
@@ -54,7 +57,7 @@ export default async function PainelNutri() {
           <li key={paciente.id}>
             <Link
               href={`/nutri/pacientes/${paciente.id}`}
-              className={`paper-card block rounded-sm p-4 transition-colors hover:border-brass ${
+              className={`paper-card block rounded-sm p-4 transition-colors hover:border-sheipe ${
                 foraDaMeta ? "border-l-[3px] border-l-urgent-line" : ""
               }`}
             >

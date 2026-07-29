@@ -26,6 +26,13 @@
   --color-calm-bg: #0f241c;
   --color-calm-line: #3ddc97;
 
+  /* Verde do módulo NoSheipe — cor própria, separada do --color-brass (ciano
+     do sistema jurídico), pra não misturar identidade visual dos dois
+     produtos que moram neste repositório. */
+  --color-sheipe: #22c55e;
+  --color-sheipe-deep: #4ade80;
+  --color-on-sheipe: #04150a;
+
   --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.4), 0 12px 40px -16px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.03);
 
   --grid-line: rgba(255, 255, 255, 0.035);
@@ -36,6 +43,7 @@
   --signature-ink: #000000;
   --signature-paper: #e6e8eb;
   --signature-brass: #22d3ee;
+  --signature-sheipe: #22c55e;
 }
 
 @media (prefers-color-scheme: light) {
@@ -63,11 +71,77 @@
     --color-calm-bg: #e1f5ea;
     --color-calm-line: #0f9d64;
 
+    --color-sheipe: #16a34a;
+    --color-sheipe-deep: #15803d;
+    --color-on-sheipe: #f0fdf4;
+
     --shadow-card: 0 1px 2px rgba(16, 18, 21, 0.04), 0 8px 24px -12px rgba(16, 18, 21, 0.12);
 
     --grid-line: rgba(16, 18, 21, 0.045);
     --scanline: rgba(16, 18, 21, 0.02);
   }
+}
+
+/*
+ * Override explícito de tema: o botão de alternância (NoSheipe) seta
+ * data-theme na tag <html>, o que precisa VENCER a media query acima em
+ * qualquer direção — por isso os dois blocos abaixo duplicam os valores dos
+ * blocos correspondentes (:root e a media query light) em vez de só um
+ * complementar. Sem data-theme setado, o tema segue prefers-color-scheme
+ * como sempre (comportamento inalterado pro resto do site).
+ */
+:root[data-theme="dark"] {
+  --color-paper: #0a0b0d;
+  --color-paper-raised: #131519;
+  --color-ink: #e6e8eb;
+  --color-ink-soft: #8b929b;
+  --color-ink-faint: #52585f;
+  --color-rule: #22262c;
+  --color-brass: #22d3ee;
+  --color-brass-deep: #67e8f9;
+  --color-on-brass: #052226;
+  --color-urgent: #ff6b7a;
+  --color-urgent-bg: #2a1319;
+  --color-urgent-line: #ff6b7a;
+  --color-attention: #ffc145;
+  --color-attention-bg: #2a2011;
+  --color-attention-line: #ffc145;
+  --color-calm: #3ddc97;
+  --color-calm-bg: #0f241c;
+  --color-calm-line: #3ddc97;
+  --color-sheipe: #22c55e;
+  --color-sheipe-deep: #4ade80;
+  --color-on-sheipe: #04150a;
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.4), 0 12px 40px -16px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.03);
+  --grid-line: rgba(255, 255, 255, 0.035);
+  --scanline: rgba(255, 255, 255, 0.018);
+}
+
+:root[data-theme="light"] {
+  --color-paper: #eef0f3;
+  --color-paper-raised: #ffffff;
+  --color-ink: #101215;
+  --color-ink-soft: #565c64;
+  --color-ink-faint: #9199a1;
+  --color-rule: #dce0e5;
+  --color-brass: #0891b2;
+  --color-brass-deep: #0e7490;
+  --color-on-brass: #f0fdff;
+  --color-urgent: #d6304a;
+  --color-urgent-bg: #fce8ea;
+  --color-urgent-line: #d6304a;
+  --color-attention: #b7791f;
+  --color-attention-bg: #fbf0dc;
+  --color-attention-line: #b7791f;
+  --color-calm: #0f9d64;
+  --color-calm-bg: #e1f5ea;
+  --color-calm-line: #0f9d64;
+  --color-sheipe: #16a34a;
+  --color-sheipe-deep: #15803d;
+  --color-on-sheipe: #f0fdf4;
+  --shadow-card: 0 1px 2px rgba(16, 18, 21, 0.04), 0 8px 24px -12px rgba(16, 18, 21, 0.12);
+  --grid-line: rgba(16, 18, 21, 0.045);
+  --scanline: rgba(16, 18, 21, 0.02);
 }
 
 * {

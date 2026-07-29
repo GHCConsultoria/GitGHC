@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { aceitarConsentimentoPaciente } from "@/lib/nutri/publico";
+import { NoSheipeLogo } from "./NoSheipeLogo";
 
 export function ConsentimentoPaciente({ token, nomePaciente }: { token: string; nomePaciente: string }) {
   const router = useRouter();
@@ -26,7 +27,9 @@ export function ConsentimentoPaciente({ token, nomePaciente }: { token: string; 
   return (
     <main className="mx-auto flex min-h-screen max-w-md flex-col justify-center gap-6 px-6 py-16">
       <div>
-        <p className="eyebrow mb-2">NoSheipe</p>
+        <div className="mb-3">
+          <NoSheipeLogo size={24} />
+        </div>
         <h1 className="font-display text-2xl">Olá, {nomePaciente}</h1>
         <p className="mt-2 text-sm text-ink-soft">
           Antes de registrar o que você comeu, precisamos do seu consentimento pra tratar esse dado de saúde (LGPD).
@@ -52,7 +55,7 @@ export function ConsentimentoPaciente({ token, nomePaciente }: { token: string; 
         type="button"
         onClick={continuar}
         disabled={!aceito || pendente}
-        className="rounded-sm bg-brass px-4 py-2.5 text-sm font-medium text-brass-on shadow-sm transition-colors hover:bg-brass-deep disabled:opacity-50"
+        className="rounded-sm bg-sheipe px-4 py-2.5 text-sm font-medium text-sheipe-on shadow-sm transition-colors hover:bg-sheipe-deep disabled:opacity-50"
       >
         {pendente ? "Confirmando…" : "Aceitar e continuar"}
       </button>

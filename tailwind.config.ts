@@ -39,6 +39,11 @@ const config: Config = {
           bg: "var(--color-calm-bg)",
           line: "var(--color-calm-line)",
         },
+        sheipe: {
+          DEFAULT: "var(--color-sheipe)",
+          deep: "var(--color-sheipe-deep)",
+          on: "var(--color-on-sheipe)",
+        },
       },
       fontFamily: {
         display: ["var(--font-display)", "ui-monospace", "monospace"],
