@@ -1,17 +1,16 @@
 import Link from "next/link";
 import { obterNutricionistaAtual } from "@/lib/nutri/auth";
-import { buscarPacientesDoNutricionista } from "@/lib/nutri/consultas";
+import { buscarPacientesComAderencia } from "@/lib/nutri/consultas";
 import { sairNutricionista } from "../login/actions";
 
 /**
- * Marco 2: lista de pacientes + cadastro. O % de aderência hoje/semana e o
- * destaque de quem está fora da meta entram no Marco 4, quando já existirem
- * registros de refeição pra derivar isso.
+ * Painel de aderência: % da meta batida hoje/semana por paciente, com
+ * destaque de quem está fora (ver limiar em src/lib/nutri/aderencia.ts).
  */
 export default async function PainelNutri() {
   const nutricionista = await obterNutricionistaAtual();
-  const pacientes = await buscarPacientesDoNutricionista(nutricionista.id);
-  const vagasRestantes = nutricionista.limitePlano - pacientes.length;
+  const pacientesComAderencia = await buscarPacientesComAderencia(nutricionista.id);
+  const vagasRestantes = nutricionista.limitePlano - pacientesComAderencia.length;
 
   return (
     <main className="mx-auto max-w-2xl px-6 py-16">
@@ -31,7 +30,7 @@ export default async function PainelNutri() {
       </div>
 
       <p className="mt-2 text-sm text-ink-soft">
-        {pacientes.length} de {nutricionista.limitePlano} pacientes do plano
+        {pacientesComAderencia.length} de {nutricionista.limitePlano} pacientes do plano
         {vagasRestantes <= 0 ? " — limite atingido" : ""}.
       </p>
 
@@ -51,20 +50,32 @@ export default async function PainelNutri() {
       </div>
 
       <ul className="mt-8 flex flex-col gap-3">
-        {pacientes.map((paciente) => (
+        {pacientesComAderencia.map(({ paciente, saldoHoje, saldoSemana, foraDaMeta }) => (
           <li key={paciente.id}>
-            <Link href={`/nutri/pacientes/${paciente.id}`} className="paper-card block rounded-sm p-4 transition-colors hover:border-brass">
-              <p className="font-display text-lg leading-snug">{paciente.nome}</p>
+            <Link
+              href={`/nutri/pacientes/${paciente.id}`}
+              className={`paper-card block rounded-sm p-4 transition-colors hover:border-brass ${
+                foraDaMeta ? "border-l-[3px] border-l-urgent-line" : ""
+              }`}
+            >
+              <div className="flex items-baseline justify-between gap-3">
+                <p className="font-display text-lg leading-snug">{paciente.nome}</p>
+                {foraDaMeta && <span className="eyebrow shrink-0 text-urgent">fora da meta</span>}
+              </div>
               <p className="mt-1 text-xs text-ink-faint">
                 Meta: {paciente.metaKcal} kcal · {paciente.metaProteina}g P · {paciente.metaCarbo}g C ·{" "}
                 {paciente.metaGordura}g G
               </p>
+              <div className="mt-2 flex gap-4 text-xs">
+                <span className={foraDaMeta ? "text-urgent" : "text-ink-soft"}>Hoje: {saldoHoje.kcal.percentual}%</span>
+                <span className="text-ink-soft">Semana: {saldoSemana.kcal.percentual}%</span>
+              </div>
             </Link>
           </li>
         ))}
       </ul>
 
-      {pacientes.length === 0 && (
+      {pacientesComAderencia.length === 0 && (
         <p className="mt-8 text-sm text-ink-faint">Nenhum paciente cadastrado ainda.</p>
       )}
     </main>

@@ -78,3 +78,52 @@ export function calcularSaldoDoDia(registros: RegistroParaSaldo[], metas: MetasP
     gordura: saldoMacro(totais.gordura, metas.metaGordura),
   };
 }
+
+/**
+ * Início da semana (segunda-feira, 00:00 em America/Sao_Paulo) até agora, +
+ * quantos dias-calendário já se passaram desde a segunda (inclusive hoje).
+ * `inicio.getUTCDay()` reflete corretamente o dia da semana em SP porque
+ * meia-noite local + o offset (negativo, algumas horas) nunca cruza pra
+ * outro dia-calendário em UTC.
+ */
+export function limitesDaSemanaEmSaoPaulo(referencia: Date = new Date()): {
+  inicio: Date;
+  fim: Date;
+  diasDecorridos: number;
+} {
+  const { inicio: inicioHoje, fim } = limitesDoDiaEmSaoPaulo(referencia);
+  const diaDaSemana = inicioHoje.getUTCDay(); // 0 = domingo .. 6 = sábado
+  const diasDesdeSegunda = diaDaSemana === 0 ? 6 : diaDaSemana - 1;
+  const inicio = new Date(inicioHoje.getTime() - diasDesdeSegunda * 24 * 60 * 60 * 1000);
+  return { inicio, fim, diasDecorridos: diasDesdeSegunda + 1 };
+}
+
+/**
+ * Aderência da semana até agora: reaproveita calcularSaldoDoDia escalando a
+ * meta diária pelos dias já decorridos, em vez de comparar contra a semana
+ * inteira — senão a % apareceria artificialmente baixa numa segunda-feira,
+ * mesmo com aderência perfeita.
+ */
+export function calcularAderenciaSemana(
+  registros: RegistroParaSaldo[],
+  metas: MetasPaciente,
+  diasDecorridos: number,
+): SaldoDoDia {
+  const metasEscaladas: MetasPaciente = {
+    metaKcal: metas.metaKcal * diasDecorridos,
+    metaProteina: metas.metaProteina * diasDecorridos,
+    metaCarbo: metas.metaCarbo * diasDecorridos,
+    metaGordura: metas.metaGordura * diasDecorridos,
+  };
+  return calcularSaldoDoDia(registros, metasEscaladas);
+}
+
+// Faixa aceitável de aderência em kcal — abaixo ou acima disso, o paciente
+// é destacado como "fora" no painel do nutricionista. Kcal é o indicador
+// mais direto de aderência geral pra esse destaque; sem uma referência
+// clínica melhor no brief, esta é uma escolha de produto, ajustável depois.
+const FAIXA_ACEITAVEL_KCAL = { min: 70, max: 130 };
+
+export function estaForaDaMeta(percentualKcal: number): boolean {
+  return percentualKcal < FAIXA_ACEITAVEL_KCAL.min || percentualKcal > FAIXA_ACEITAVEL_KCAL.max;
+}
