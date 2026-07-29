@@ -35,7 +35,7 @@ texto; painel de aderência). É um demo de descoberta, não o produto final —
 completo na tarefa que o originou.
 
 - Rotas: `/nutri/login` (signup/login do nutricionista, self-service), `/nutri` (painel,
-  protegido), `/p/[token]` (página do paciente, sem senha — chega no Marco 3)
+  protegido), `/p/[token]` (página do paciente, sem senha)
 - Código: `src/lib/nutri/*` (lógica de domínio) e `src/app/nutri/*`
 - Modelos Prisma: `Nutricionista`, `Paciente`, `RegistroRefeicao` (mesmo banco/projeto
   Supabase do sistema jurídico, sem nenhuma relação entre os dois domínios)
@@ -44,6 +44,13 @@ completo na tarefa que o originou.
   interface. Para produção, isso precisa ser ancorado nas tabelas TACO/TBCA + uma base de
   industrializados — o LLM sozinho erra macro de marmita, PF, açaí. No demo a estimativa
   serve; em produção não.
+- **Registro por áudio**: transcrição via Web Speech API do navegador (`src/components/
+  nutri/useReconhecimentoDeFala.ts`) — a abordagem mais simples possível, sem provedor de
+  STT novo fora do stack combinado. Funciona bem em Chrome/Android; suporte é limitado ou
+  ausente em boa parte do Safari/iOS (o botão de gravação some quando o navegador não
+  suporta, cai para texto). Para produção isso merece um serviço de STT dedicado. Uma vez
+  transcrito, o áudio entra pelo mesmo caminho do texto — mesmo contrato de IA, mesma
+  idempotência por `clientLogId`, só o campo `origem` muda para `AUDIO`.
 - Auth: mesmo projeto Supabase Auth do sistema jurídico (`Nutricionista.authUserId`
   aponta pro mesmo `auth.users`), mas com cadastro self-service (diferente do `/login`
   jurídico, que é só por admin) — o nutricionista é o cliente direto do produto.

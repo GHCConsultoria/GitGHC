@@ -8,6 +8,7 @@ const corpoSchema = z.object({
   token: z.string().min(1),
   clientLogId: z.string().uuid("clientLogId deve ser um UUID"),
   rawText: z.string().trim().min(1, "descreva o que você comeu"),
+  origem: z.nativeEnum(OrigemRegistro).default(OrigemRegistro.TEXTO),
 });
 
 function serializarRegistro(registro: {
@@ -35,10 +36,11 @@ function serializarRegistro(registro: {
 }
 
 /**
- * Recebe o relato de refeição do paciente (texto — o áudio do Marco 5 vira
- * transcrição e entra pelo mesmo caminho, sem mudar este contrato), chama a
- * IA pra extrair macros e salva. Sem sessão nenhuma: o token do paciente na
- * própria requisição é a credencial, igual ao resto da página /p/[token].
+ * Recebe o relato de refeição do paciente (texto digitado ou transcrição de
+ * áudio — os dois chegam aqui já como texto, `origem` só rotula a origem),
+ * chama a IA pra extrair macros e salva. Sem sessão nenhuma: o token do
+ * paciente na própria requisição é a credencial, igual ao resto da página
+ * /p/[token].
  */
 export async function POST(request: NextRequest) {
   const corpoBruto: unknown = await request.json().catch(() => null);
@@ -79,7 +81,7 @@ export async function POST(request: NextRequest) {
       data: {
         pacienteId: paciente.id,
         clienteRegistroId: parsed.data.clientLogId,
-        origem: OrigemRegistro.TEXTO,
+        origem: parsed.data.origem,
         entradaBruta: parsed.data.rawText,
         itens: macros.items,
         kcal: Math.round(macros.totals.kcal),

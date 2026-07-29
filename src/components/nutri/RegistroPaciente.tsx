@@ -1,7 +1,8 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
+import { reconhecimentoDeFalaDisponivel, useReconhecimentoDeFala } from "./useReconhecimentoDeFala";
 
 interface RegistroExibicao {
   id: string;
@@ -37,19 +38,40 @@ interface Props {
 export function RegistroPaciente({ token, nomePaciente, saldo, registros }: Props) {
   const router = useRouter();
   const [texto, setTexto] = useState("");
+  const [origemAtual, setOrigemAtual] = useState<"TEXTO" | "AUDIO">("TEXTO");
   const [erro, setErro] = useState<string | null>(null);
   const [pendente, iniciarTransicao] = useTransition();
+  const [falaDisponivel, setFalaDisponivel] = useState(false);
+  const { gravando, erro: erroFala, iniciar: iniciarGravacao, parar: pararGravacao } = useReconhecimentoDeFala();
+
+  useEffect(() => {
+    setFalaDisponivel(reconhecimentoDeFalaDisponivel());
+  }, []);
+
+  function alternarGravacao() {
+    if (gravando) {
+      pararGravacao();
+      return;
+    }
+    iniciarGravacao((transcricao) => {
+      if (transcricao) {
+        setTexto(transcricao);
+        setOrigemAtual("AUDIO");
+      }
+    });
+  }
 
   function registrar(evento: React.FormEvent) {
     evento.preventDefault();
     if (!texto.trim()) return;
     setErro(null);
     const clientLogId = crypto.randomUUID();
+    const origemEnviada = origemAtual;
     iniciarTransicao(async () => {
       const resposta = await fetch("/api/nutri/registros", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ token, clientLogId, rawText: texto }),
+        body: JSON.stringify({ token, clientLogId, rawText: texto, origem: origemEnviada }),
       });
       const dados = await resposta.json().catch(() => ({}));
       if (!resposta.ok) {
@@ -57,6 +79,7 @@ export function RegistroPaciente({ token, nomePaciente, saldo, registros }: Prop
         return;
       }
       setTexto("");
+      setOrigemAtual("TEXTO");
       router.refresh();
     });
   }
@@ -78,16 +101,35 @@ export function RegistroPaciente({ token, nomePaciente, saldo, registros }: Prop
           <span className="eyebrow mb-1.5 block">O que você comeu?</span>
           <textarea
             value={texto}
-            onChange={(evento) => setTexto(evento.target.value)}
+            onChange={(evento) => {
+              setTexto(evento.target.value);
+              setOrigemAtual("TEXTO");
+            }}
             rows={3}
             placeholder="ex.: 150g de peito de frango grelhado com arroz e salada"
             className="w-full rounded-sm border border-rule bg-paper px-3 py-2 text-sm outline-none focus:border-brass"
           />
         </label>
+
+        {falaDisponivel && (
+          <button
+            type="button"
+            onClick={alternarGravacao}
+            className={`self-start rounded-sm border px-3 py-1.5 text-xs transition-colors ${
+              gravando
+                ? "border-urgent-line text-urgent"
+                : "border-rule text-ink-soft hover:border-brass hover:text-ink"
+            }`}
+          >
+            {gravando ? "⏹ Parar gravação" : "🎙️ Gravar áudio"}
+          </button>
+        )}
+        {erroFala && <p className="text-sm text-urgent">{erroFala}</p>}
         {erro && <p className="text-sm text-urgent">{erro}</p>}
+
         <button
           type="submit"
-          disabled={pendente || !texto.trim()}
+          disabled={pendente || gravando || !texto.trim()}
           className="self-start rounded-sm bg-brass px-4 py-2 text-sm font-medium text-brass-on shadow-sm transition-colors hover:bg-brass-deep disabled:opacity-50"
         >
           {pendente ? "Estimando macros…" : "Registrar"}
