@@ -9,15 +9,20 @@ const ROTA_LOGIN_NUTRI = "/nutri/login";
  * certo quando não há usuário autenticado. Duas áreas independentes
  * compartilham o mesmo projeto Supabase Auth mas têm perfis diferentes
  * (Usuario vs Nutricionista — ver src/lib/auth.ts e src/lib/nutri/auth.ts):
- * /nutri/** manda pra /nutri/login, o resto manda pra /login. A rota
- * pública /p/[token] (link do paciente, sem senha) entra como exceção
- * quando existir (Marco 3). Rotas de API ficam fora do matcher abaixo (têm
- * seu próprio esquema de auth — CRON_SECRET no cron, nenhum ainda na
- * ingestão manual — redirecionar uma chamada de API para uma página HTML de
- * login não faz sentido).
+ * /nutri/** manda pra /nutri/login, o resto manda pra /login. /p/[token] é
+ * o link do paciente — sem senha nenhuma, o token na própria URL é a
+ * credencial — então fica fora do gate de sessão inteiramente. Rotas de
+ * API ficam fora do matcher abaixo (têm seu próprio esquema de auth —
+ * CRON_SECRET no cron, o token no corpo em /api/nutri/registros —
+ * redirecionar uma chamada de API para uma página HTML de login não faz
+ * sentido).
  */
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({ request });
+
+  if (request.nextUrl.pathname.startsWith("/p/")) {
+    return response;
+  }
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
