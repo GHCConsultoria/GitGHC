@@ -330,3 +330,98 @@ model RascunhoPeticao {
 
   @@map("rascunhos_peticao")
 }
+
+// ---------------------------------------------------------------------------
+// Módulo nutrição — MVP "Trilha A" (demo separado, mesmo projeto Supabase/DB
+// por conveniência de ambiente, sem nenhuma relação com os models acima).
+// Nutricionista.authUserId aponta pro mesmo auth.users do Supabase Auth do
+// sistema jurídico, mas neste MVP um authUserId nunca tem linha em Usuario e
+// em Nutricionista ao mesmo tempo.
+// ---------------------------------------------------------------------------
+
+model Nutricionista {
+  id  String @id @default(cuid())
+
+  authUserId  String @unique
+  nome        String
+  email       String @unique
+  crn         String?
+  // Limite do plano demo (R$ 99,90) — sem gateway de pagamento neste MVP,
+  // só a trava de quantidade em criarPaciente.
+  limitePlano Int    @default(20)
+
+  pacientes Paciente[]
+
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  @@map("nutricionistas")
+}
+
+enum StatusPaciente {
+  ATIVO
+  ARQUIVADO
+}
+
+model Paciente {
+  id  String @id @default(cuid())
+
+  nutricionista   Nutricionista @relation(fields: [nutricionistaId], references: [id])
+  nutricionistaId String
+
+  nome     String
+  telefone String?
+
+  // Token opaco do link público (/p/[token]) — acesso do paciente sem senha.
+  tokenAcesso String @unique
+
+  metaKcal     Int
+  metaProteina Int
+  metaCarbo    Int
+  metaGordura  Int
+
+  // LGPD: null até o paciente aceitar o consentimento na primeira visita à
+  // própria página — sem isso o registro de refeição não libera.
+  consentimentoEm DateTime?
+
+  status StatusPaciente @default(ATIVO)
+
+  registros RegistroRefeicao[]
+
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  @@map("pacientes")
+}
+
+enum OrigemRegistro {
+  AUDIO
+  TEXTO
+}
+
+model RegistroRefeicao {
+  id  String @id @default(cuid())
+
+  paciente   Paciente @relation(fields: [pacienteId], references: [id])
+  pacienteId String
+
+  // UUID gerado pelo client — dedupe idempotente (reprocessar o mesmo envio
+  // nunca duplica o registro).
+  clienteRegistroId String @unique
+
+  origem       OrigemRegistro
+  entradaBruta String // texto digitado ou transcrição do áudio
+  itens        Json   // [{ nome, gramas, kcal, proteina, carbo, gordura }]
+
+  kcal      Int
+  proteina  Int
+  carbo     Int
+  gordura   Int
+  // 0..1 devolvido pela IA — é estimativa, nunca fato; rotulado como tal na UI.
+  confianca Float
+
+  registradoEm DateTime @default(now())
+  criadoEm     DateTime @default(now())
+
+  @@map("registros_refeicao")
+}

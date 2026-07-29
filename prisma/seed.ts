@@ -285,11 +285,27 @@ async function seedDadosDemonstracaoPainel() {
   console.log(`Semeados ${DEMO_ITENS.length} prazos de demonstração + 1 publicação não identificada.`);
 }
 
+// Módulo nutrição (MVP "Trilha A") — nutricionista demo, pra src/lib/nutri/
+// auth.ts ter o que resolver quando Supabase não está configurado neste
+// ambiente (mesmo padrão do advogado demo acima).
+async function seedNutricionistaDemo() {
+  await prisma.nutricionista.upsert({
+    where: { authUserId: "demo-nutricionista-auth-id" },
+    update: {},
+    create: {
+      authUserId: "demo-nutricionista-auth-id",
+      nome: "Nutricionista Demo",
+      email: "nutricionista.demo@example.com",
+    },
+  });
+}
+
 async function main() {
   await seedEscritorioEUsuario();
   await seedFeriadosNacionais();
   await seedTiposAtoPrazo();
   await seedDadosDemonstracaoPainel();
+  await seedNutricionistaDemo();
 
   // TODO(feriados estaduais/tribunal): esta seed cobre apenas o calendário
   // NACIONAL (aplicável a toda UF, tribunal = null). Feriados estaduais,

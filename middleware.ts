@@ -2,13 +2,19 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 const ROTA_LOGIN = "/login";
+const ROTA_LOGIN_NUTRI = "/nutri/login";
 
 /**
- * Renova a sessão do Supabase a cada navegação e redireciona para /login
- * quando não há usuário autenticado. Rotas de API ficam fora do matcher
- * abaixo (têm seu próprio esquema de auth — CRON_SECRET no cron, nenhum
- * ainda na ingestão manual — redirecionar uma chamada de API para uma
- * página HTML de login não faz sentido).
+ * Renova a sessão do Supabase a cada navegação e redireciona para o login
+ * certo quando não há usuário autenticado. Duas áreas independentes
+ * compartilham o mesmo projeto Supabase Auth mas têm perfis diferentes
+ * (Usuario vs Nutricionista — ver src/lib/auth.ts e src/lib/nutri/auth.ts):
+ * /nutri/** manda pra /nutri/login, o resto manda pra /login. A rota
+ * pública /p/[token] (link do paciente, sem senha) entra como exceção
+ * quando existir (Marco 3). Rotas de API ficam fora do matcher abaixo (têm
+ * seu próprio esquema de auth — CRON_SECRET no cron, nenhum ainda na
+ * ingestão manual — redirecionar uma chamada de API para uma página HTML de
+ * login não faz sentido).
  */
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({ request });
@@ -42,10 +48,13 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const ehRotaDeLogin = request.nextUrl.pathname.startsWith(ROTA_LOGIN);
+  const pathname = request.nextUrl.pathname;
+  const ehAreaNutri = pathname.startsWith("/nutri");
+  const ehRotaDeLogin = ehAreaNutri ? pathname.startsWith(ROTA_LOGIN_NUTRI) : pathname.startsWith(ROTA_LOGIN);
+
   if (!user && !ehRotaDeLogin) {
     const destino = request.nextUrl.clone();
-    destino.pathname = ROTA_LOGIN;
+    destino.pathname = ehAreaNutri ? ROTA_LOGIN_NUTRI : ROTA_LOGIN;
     return NextResponse.redirect(destino);
   }
 
