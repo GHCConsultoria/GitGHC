@@ -20,7 +20,7 @@ export default function LoginNutri() {
         style={{ background: "var(--signature-ink)", color: "var(--signature-paper)" }}
       >
         <p className="eyebrow" style={{ color: "var(--signature-paper)", opacity: 0.5 }}>
-          Nutrição · demo
+          NoSheipe
         </p>
         <blockquote className="font-display text-3xl leading-snug">
           O nutricionista prescreve<span style={{ color: "var(--signature-brass)" }}>,</span> o app só acompanha.
