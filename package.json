@@ -4,13 +4,17 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "sh -c 'if [ -n \"$DIRECT_URL\" ]; then npx prisma migrate deploy && npx prisma db seed; fi' && next build",
+    "build": "sh -c 'if [ -n \"$DIRECT_URL\" ]; then npx prisma migrate deploy && npx prisma db seed; fi' && sh -c 'if [ -n \"$TURSO_DATABASE_URL\" ]; then npx prisma db push --schema=prisma/nutri/schema.prisma --accept-data-loss --skip-generate && npx tsx prisma/nutri/seed.ts; fi' && next build",
     "start": "next start",
     "lint": "next lint",
     "test": "vitest run",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate && prisma generate --schema=prisma/nutri/schema.prisma",
+    "db:push:nutri": "prisma db push --schema=prisma/nutri/schema.prisma",
+    "db:seed:nutri": "tsx prisma/nutri/seed.ts"
   },
   "dependencies": {
+    "@libsql/client": "^0.8.1",
+    "@prisma/adapter-libsql": "^5.22.0",
     "@prisma/client": "5.22.0",
     "@supabase/ssr": "^0.12.3",
     "@supabase/supabase-js": "^2.110.8",

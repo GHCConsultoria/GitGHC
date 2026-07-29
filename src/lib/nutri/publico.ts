@@ -2,8 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { StatusPaciente } from "@prisma/client";
-import { prisma } from "@/lib/prisma";
+import { prismaNutri } from "@/lib/nutri/prisma";
+import { StatusPaciente } from "@/lib/nutri/schemas";
 
 export type ResultadoAcaoPublica = { sucesso: true } | { sucesso: false; erro: string };
 
@@ -20,12 +20,12 @@ export async function aceitarConsentimentoPaciente(input: unknown): Promise<Resu
     return { sucesso: false, erro: "token inválido" };
   }
 
-  const paciente = await prisma.paciente.findUnique({ where: { tokenAcesso: parsed.data.token } });
+  const paciente = await prismaNutri.paciente.findUnique({ where: { tokenAcesso: parsed.data.token } });
   if (!paciente || paciente.status !== StatusPaciente.ATIVO) {
     return { sucesso: false, erro: "paciente não encontrado" };
   }
 
-  await prisma.paciente.update({ where: { id: paciente.id }, data: { consentimentoEm: new Date() } });
+  await prismaNutri.paciente.update({ where: { id: paciente.id }, data: { consentimentoEm: new Date() } });
 
   revalidatePath(`/p/${parsed.data.token}`);
   return { sucesso: true };

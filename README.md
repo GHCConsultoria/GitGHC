@@ -37,8 +37,23 @@ completo na tarefa que o originou.
 - Rotas: `/nutri/login` (signup/login do nutricionista, self-service), `/nutri` (painel,
   protegido), `/p/[token]` (página do paciente, sem senha)
 - Código: `src/lib/nutri/*` (lógica de domínio) e `src/app/nutri/*`
-- Modelos Prisma: `Nutricionista`, `Paciente`, `RegistroRefeicao` (mesmo banco/projeto
-  Supabase do sistema jurídico, sem nenhuma relação entre os dois domínios)
+- **Banco separado (Turso/libSQL)**: `Nutricionista`, `Paciente`, `RegistroRefeicao` moram
+  num schema Prisma próprio (`prisma/nutri/schema.prisma`, client em
+  `src/lib/nutri/prisma.ts`) rodando no **Turso**, não no Postgres/Supabase do sistema
+  jurídico — os dois bancos são independentes, sem nenhuma relação entre os domínios.
+  SQLite/Turso não tem enum nativo, então `status`/`origem` são `String` com os valores
+  válidos documentados em `src/lib/nutri/schemas.ts`; o mesmo vale pro campo `itens`, que
+  vira JSON serializado manualmente (SQLite também não tem o tipo `Json` do Prisma).
+  Setup:
+  ```bash
+  # criar o banco (Turso CLI: https://docs.turso.tech/cli/installation)
+  turso db create nosheipe
+  turso db show nosheipe --url        # -> TURSO_DATABASE_URL
+  turso db tokens create nosheipe     # -> TURSO_AUTH_TOKEN
+  # aplicar o schema e semear o nutricionista demo
+  npm run db:push:nutri
+  npm run db:seed:nutri
+  ```
 - **Estimativa de macros por IA**: a IA (Anthropic) extrai itens e macros a partir do
   texto/transcrição do paciente. Isso é uma **estimativa**, rotulada como tal na
   interface. Para produção, isso precisa ser ancorado nas tabelas TACO/TBCA + uma base de
@@ -51,9 +66,11 @@ completo na tarefa que o originou.
   suporta, cai para texto). Para produção isso merece um serviço de STT dedicado. Uma vez
   transcrito, o áudio entra pelo mesmo caminho do texto — mesmo contrato de IA, mesma
   idempotência por `clientLogId`, só o campo `origem` muda para `AUDIO`.
-- Auth: mesmo projeto Supabase Auth do sistema jurídico (`Nutricionista.authUserId`
-  aponta pro mesmo `auth.users`), mas com cadastro self-service (diferente do `/login`
-  jurídico, que é só por admin) — o nutricionista é o cliente direto do produto.
+- Auth: mesmo projeto **Supabase Auth** do sistema jurídico (`Nutricionista.authUserId`
+  aponta pro mesmo `auth.users`) — usado só como serviço de autenticação (GoTrue),
+  independente de onde os dados da aplicação ficam guardados (Turso). Cadastro
+  self-service (diferente do `/login` jurídico, que é só por admin) — o nutricionista é o
+  cliente direto do produto.
 - Não-negociáveis do domínio: o app nunca prescreve (metas sempre vêm do
   nutricionista); sem consentimento LGPD (`consentimentoEm`) o paciente não registra
   nada; registro de refeição é idempotente por `clienteRegistroId`.

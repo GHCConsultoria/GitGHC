@@ -1,5 +1,6 @@
-import { Paciente, StatusPaciente } from "@prisma/client";
-import { prisma } from "@/lib/prisma";
+import type { Paciente } from "../../../prisma/nutri/generated";
+import { prismaNutri } from "@/lib/nutri/prisma";
+import { StatusPaciente } from "@/lib/nutri/schemas";
 import {
   calcularAderenciaSemana,
   calcularSaldoDoDia,
@@ -10,14 +11,14 @@ import {
 } from "@/lib/nutri/aderencia";
 
 export async function buscarPacientesDoNutricionista(nutricionistaId: string) {
-  return prisma.paciente.findMany({
+  return prismaNutri.paciente.findMany({
     where: { nutricionistaId, status: StatusPaciente.ATIVO },
     orderBy: { criadoEm: "desc" },
   });
 }
 
 export async function buscarPacientePorId(pacienteId: string, nutricionistaId: string) {
-  const paciente = await prisma.paciente.findUnique({ where: { id: pacienteId } });
+  const paciente = await prismaNutri.paciente.findUnique({ where: { id: pacienteId } });
   if (!paciente || paciente.nutricionistaId !== nutricionistaId) {
     return null;
   }
@@ -26,7 +27,7 @@ export async function buscarPacientePorId(pacienteId: string, nutricionistaId: s
 
 /** Busca pública por token — usada pela página /p/[token], sem checagem de nutricionista. */
 export async function buscarPacientePorToken(token: string) {
-  const paciente = await prisma.paciente.findUnique({ where: { tokenAcesso: token } });
+  const paciente = await prismaNutri.paciente.findUnique({ where: { tokenAcesso: token } });
   if (!paciente || paciente.status !== StatusPaciente.ATIVO) {
     return null;
   }
@@ -35,7 +36,7 @@ export async function buscarPacientePorToken(token: string) {
 
 export async function buscarRegistrosDeHoje(pacienteId: string) {
   const { inicio, fim } = limitesDoDiaEmSaoPaulo();
-  return prisma.registroRefeicao.findMany({
+  return prismaNutri.registroRefeicao.findMany({
     where: { pacienteId, registradoEm: { gte: inicio, lt: fim } },
     orderBy: { registradoEm: "asc" },
   });
@@ -57,10 +58,10 @@ export async function buscarPacientesComAderencia(nutricionistaId: string): Prom
   return Promise.all(
     pacientes.map(async (paciente) => {
       const [registrosHoje, registrosSemana] = await Promise.all([
-        prisma.registroRefeicao.findMany({
+        prismaNutri.registroRefeicao.findMany({
           where: { pacienteId: paciente.id, registradoEm: { gte: inicioHoje, lt: fimHoje } },
         }),
-        prisma.registroRefeicao.findMany({
+        prismaNutri.registroRefeicao.findMany({
           where: { pacienteId: paciente.id, registradoEm: { gte: inicioSemana, lt: fimHoje } },
         }),
       ]);

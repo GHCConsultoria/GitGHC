@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { prisma } from "@/lib/prisma";
+import { prismaNutri } from "@/lib/nutri/prisma";
 import { criarClienteSupabaseServidor } from "@/lib/supabase/server";
 import { criarClienteSupabaseAdmin } from "@/lib/supabase/admin";
 
@@ -98,7 +98,7 @@ export async function cadastrarNutricionista(
   }
 
   try {
-    await prisma.nutricionista.create({
+    await prismaNutri.nutricionista.create({
       data: {
         authUserId: data.user.id,
         nome: parsed.data.nome,

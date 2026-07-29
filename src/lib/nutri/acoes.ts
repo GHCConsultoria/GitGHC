@@ -2,10 +2,9 @@
 
 import { randomBytes } from "node:crypto";
 import { revalidatePath } from "next/cache";
-import { StatusPaciente } from "@prisma/client";
-import { prisma } from "@/lib/prisma";
+import { prismaNutri } from "@/lib/nutri/prisma";
 import { obterNutricionistaAtual } from "@/lib/nutri/auth";
-import { criarPacienteSchema, atualizarMetasSchema, pacienteIdSchema } from "@/lib/nutri/schemas";
+import { StatusPaciente, criarPacienteSchema, atualizarMetasSchema, pacienteIdSchema } from "@/lib/nutri/schemas";
 
 export type ResultadoAcaoNutri = { sucesso: true } | { sucesso: false; erro: string };
 export type ResultadoToken = { sucesso: true; token: string } | { sucesso: false; erro: string };
@@ -20,7 +19,7 @@ function gerarTokenAcesso(): string {
  * arquivar paciente de outro só sabendo o id.
  */
 async function buscarPacienteDoNutricionista(pacienteId: string, nutricionistaId: string) {
-  const paciente = await prisma.paciente.findUnique({ where: { id: pacienteId } });
+  const paciente = await prismaNutri.paciente.findUnique({ where: { id: pacienteId } });
   if (!paciente || paciente.nutricionistaId !== nutricionistaId) {
     return null;
   }
@@ -40,7 +39,7 @@ export async function criarPaciente(input: unknown): Promise<ResultadoAcaoNutri>
 
   const nutricionista = await obterNutricionistaAtual();
 
-  const totalAtivos = await prisma.paciente.count({
+  const totalAtivos = await prismaNutri.paciente.count({
     where: { nutricionistaId: nutricionista.id, status: StatusPaciente.ATIVO },
   });
   if (totalAtivos >= nutricionista.limitePlano) {
@@ -50,7 +49,7 @@ export async function criarPaciente(input: unknown): Promise<ResultadoAcaoNutri>
     };
   }
 
-  await prisma.paciente.create({
+  await prismaNutri.paciente.create({
     data: {
       nutricionistaId: nutricionista.id,
       nome: parsed.data.nome,
@@ -79,7 +78,7 @@ export async function atualizarMetas(input: unknown): Promise<ResultadoAcaoNutri
     return { sucesso: false, erro: "paciente não encontrado" };
   }
 
-  await prisma.paciente.update({
+  await prismaNutri.paciente.update({
     where: { id: paciente.id },
     data: {
       metaKcal: parsed.data.metaKcal,
@@ -108,7 +107,7 @@ export async function regenerarTokenPaciente(input: unknown): Promise<ResultadoT
   }
 
   const token = gerarTokenAcesso();
-  await prisma.paciente.update({ where: { id: paciente.id }, data: { tokenAcesso: token } });
+  await prismaNutri.paciente.update({ where: { id: paciente.id }, data: { tokenAcesso: token } });
 
   revalidatePath(`/nutri/pacientes/${paciente.id}`);
   return { sucesso: true, token };
@@ -132,7 +131,7 @@ export async function arquivarPaciente(input: unknown): Promise<ResultadoAcaoNut
     return { sucesso: false, erro: "paciente não encontrado" };
   }
 
-  await prisma.paciente.update({ where: { id: paciente.id }, data: { status: StatusPaciente.ARQUIVADO } });
+  await prismaNutri.paciente.update({ where: { id: paciente.id }, data: { status: StatusPaciente.ARQUIVADO } });
 
   revalidatePath("/nutri");
   return { sucesso: true };

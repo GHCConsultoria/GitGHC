@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { Prisma, OrigemRegistro, StatusPaciente } from "@prisma/client";
-import { prisma } from "@/lib/prisma";
+import { Prisma } from "../../../../../prisma/nutri/generated";
+import { prismaNutri } from "@/lib/nutri/prisma";
+import { OrigemRegistro, StatusPaciente } from "@/lib/nutri/schemas";
 import { extrairMacros, IaRespostaInvalidaError, IaNaoConfiguradaError } from "@/lib/nutri/ia";
 
 const corpoSchema = z.object({
@@ -14,7 +15,7 @@ const corpoSchema = z.object({
 function serializarRegistro(registro: {
   id: string;
   entradaBruta: string;
-  itens: Prisma.JsonValue;
+  itens: string;
   kcal: number;
   proteina: number;
   carbo: number;
@@ -25,7 +26,7 @@ function serializarRegistro(registro: {
   return {
     id: registro.id,
     entradaBruta: registro.entradaBruta,
-    itens: registro.itens,
+    itens: JSON.parse(registro.itens),
     kcal: registro.kcal,
     proteina: registro.proteina,
     carbo: registro.carbo,
@@ -49,7 +50,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ erro: parsed.error.issues[0]?.message ?? "payload inválido" }, { status: 400 });
   }
 
-  const paciente = await prisma.paciente.findUnique({ where: { tokenAcesso: parsed.data.token } });
+  const paciente = await prismaNutri.paciente.findUnique({ where: { tokenAcesso: parsed.data.token } });
   if (!paciente || paciente.status !== StatusPaciente.ATIVO) {
     return NextResponse.json({ erro: "paciente não encontrado" }, { status: 404 });
   }
@@ -59,7 +60,7 @@ export async function POST(request: NextRequest) {
 
   // Idempotência: reprocessar o mesmo clientLogId nunca duplica nem chama a
   // IA de novo — devolve o registro já salvo.
-  const existente = await prisma.registroRefeicao.findUnique({
+  const existente = await prismaNutri.registroRefeicao.findUnique({
     where: { clienteRegistroId: parsed.data.clientLogId },
   });
   if (existente) {
@@ -77,13 +78,13 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const registro = await prisma.registroRefeicao.create({
+    const registro = await prismaNutri.registroRefeicao.create({
       data: {
         pacienteId: paciente.id,
         clienteRegistroId: parsed.data.clientLogId,
         origem: parsed.data.origem,
         entradaBruta: parsed.data.rawText,
-        itens: macros.items,
+        itens: JSON.stringify(macros.items),
         kcal: Math.round(macros.totals.kcal),
         proteina: Math.round(macros.totals.protein),
         carbo: Math.round(macros.totals.carbs),
@@ -97,7 +98,7 @@ export async function POST(request: NextRequest) {
     // clique) — a unique constraint pegou, então o registro já existe;
     // devolve ele em vez de propagar o erro de constraint pro client.
     if (erro instanceof Prisma.PrismaClientKnownRequestError && erro.code === "P2002") {
-      const jaSalvo = await prisma.registroRefeicao.findUnique({
+      const jaSalvo = await prismaNutri.registroRefeicao.findUnique({
         where: { clienteRegistroId: parsed.data.clientLogId },
       });
       if (jaSalvo) {
