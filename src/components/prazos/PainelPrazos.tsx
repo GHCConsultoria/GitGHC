@@ -8,6 +8,7 @@ import { confirmarPrazo, descartarPrazo, editarDataFatalPrazo } from "@/lib/praz
 import { atribuirResponsavelPrazo } from "@/lib/prazos/tarefas";
 import { formatarDataCalendario } from "@/lib/formatacao";
 import { PainelTarefas, type UsuarioSelecionavel } from "./PainelTarefas";
+import { ResumoPublicacao } from "@/components/publicacoes/ResumoPublicacao";
 
 const passoSchema = z.object({ descricao: z.string(), data: z.string() });
 const passosSchema = z.array(passoSchema);
@@ -122,10 +123,12 @@ function CartaoPrazo({ item, usuarios }: { item: ItemFilaPrazo; usuarios: Usuari
       </div>
 
       <blockquote className="mt-4 border-l-2 border-rule py-1 pl-4">
-        <p className="eyebrow mb-1">Trecho da publicação</p>
-        <p className="line-clamp-3 text-[0.9rem] italic leading-relaxed text-ink-soft">
-          &ldquo;{item.prazo.publicacao.conteudo}&rdquo;
-        </p>
+        <p className="eyebrow mb-1">Resumo da publicação</p>
+        <ResumoPublicacao
+          publicacaoId={item.prazo.publicacaoId}
+          resumoInicial={item.prazo.publicacao.resumoIa}
+          textoOriginal={item.prazo.publicacao.conteudo}
+        />
       </blockquote>
 
       <dl className="mt-5 grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-4">

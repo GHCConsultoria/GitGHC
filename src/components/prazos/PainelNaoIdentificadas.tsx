@@ -8,6 +8,7 @@ import { formatarDataCalendario } from "@/lib/formatacao";
 import { extrairCandidatosDeProcesso } from "@/lib/publicacoes/extrair-candidatos";
 import { formatarNumeroCnjParaExibicao } from "@/lib/publicacoes/cnj";
 import { FormularioNovoProcesso } from "@/components/processos/FormularioNovoProcesso";
+import { ResumoPublicacao } from "@/components/publicacoes/ResumoPublicacao";
 
 interface ProcessoResumo {
   id: string;
@@ -74,7 +75,13 @@ function ItemNaoIdentificada({
       <p className="eyebrow">
         {publicacao.fonte} · {formatarDataCalendario(publicacao.dataDisponibilizacao)}
       </p>
-      <p className="mt-2 line-clamp-2 text-sm italic text-ink-soft">&ldquo;{publicacao.conteudo}&rdquo;</p>
+      <div className="mt-2">
+        <ResumoPublicacao
+          publicacaoId={publicacao.id}
+          resumoInicial={publicacao.resumoIa}
+          textoOriginal={publicacao.conteudo}
+        />
+      </div>
       <Link
         href={`/publicacoes/${publicacao.id}`}
         className="mt-1 inline-block text-xs text-ink-faint underline decoration-dotted transition-colors hover:text-brass"

@@ -1,3 +1,9 @@
+export interface AtoAnteriorDoProcesso {
+  tipoAto: string;
+  dataFatal: Date;
+  status: string;
+}
+
 export interface DadosParaRascunho {
   cliente: string;
   numeroCnj: string;
@@ -8,6 +14,8 @@ export interface DadosParaRascunho {
   descricao: string;
   parteRepresentada: string;
   textoPublicacao: string;
+  /** Outros prazos já confirmados/cumpridos deste mesmo processo — dá contexto do histórico do caso, mais recente primeiro. */
+  historicoProcesso: AtoAnteriorDoProcesso[];
 }
 
 /**
@@ -16,6 +24,22 @@ export interface DadosParaRascunho {
  * mesmo princípio de "nunca inventar dado" que rege o resto do sistema,
  * só que aplicado a um texto em vez de uma data.
  */
+function formatarDataIso(data: Date): string {
+  return data.toISOString().slice(0, 10);
+}
+
+function montarLinhaHistorico(dados: DadosParaRascunho): string[] {
+  if (dados.historicoProcesso.length === 0) {
+    return ["Histórico do processo: nenhum outro prazo confirmado registrado antes deste."];
+  }
+  return [
+    "Histórico de atos anteriores já confirmados neste mesmo processo (mais recente primeiro — use só como contexto do andamento do caso, nunca como fato a repetir sem necessidade):",
+    ...dados.historicoProcesso.map(
+      (ato) => `- ${ato.tipoAto}, data fatal ${formatarDataIso(ato.dataFatal)} (${ato.status})`,
+    ),
+  ];
+}
+
 export function montarPromptRascunho(dados: DadosParaRascunho): string {
   return [
     "Você é um assistente jurídico auxiliando um advogado brasileiro a preparar um RASCUNHO inicial de peça processual.",
@@ -28,6 +52,8 @@ export function montarPromptRascunho(dados: DadosParaRascunho): string {
     `- Vara/órgão: ${dados.varaOrgao} — ${dados.tribunal}/${dados.uf}`,
     `- Ato processual a responder: ${dados.tipoAto}`,
     `- Descrição do prazo: ${dados.descricao}`,
+    "",
+    ...montarLinhaHistorico(dados),
     "",
     "Texto da publicação/intimação que originou este prazo:",
     '"""',

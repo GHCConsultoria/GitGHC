@@ -9,6 +9,7 @@ import { calcularPrazoParaProcesso } from "@/lib/prazos/motor";
 import { gerarTexto, IaNaoConfiguradaError } from "./anthropic";
 import { montarPromptRascunho } from "./peticoes";
 import { sugerirTipoAto } from "./sugestao-tipo-ato";
+import { resumirPublicacao } from "./resumo-publicacao";
 
 export type ResultadoRascunho = { sucesso: true; conteudo: string } | { sucesso: false; erro: string };
 
@@ -39,6 +40,17 @@ export async function gerarRascunhoPeticao(input: unknown): Promise<ResultadoRas
     return { sucesso: false, erro: "só é possível gerar rascunho para um prazo confirmado" };
   }
 
+  const atosAnteriores = await prisma.prazo.findMany({
+    where: {
+      processoId: prazo.processoId,
+      id: { not: prazo.id },
+      status: { in: ["CONFIRMADO", "CUMPRIDO"] },
+    },
+    select: { tipoAto: true, dataFatal: true, status: true },
+    orderBy: { dataFatal: "desc" },
+    take: 5,
+  });
+
   const prompt = montarPromptRascunho({
     cliente: prazo.processo.cliente,
     numeroCnj: prazo.processo.numeroCnj,
@@ -49,6 +61,7 @@ export async function gerarRascunhoPeticao(input: unknown): Promise<ResultadoRas
     descricao: prazo.descricao,
     parteRepresentada: prazo.processo.parteRepresentada,
     textoPublicacao: prazo.publicacao.conteudo,
+    historicoProcesso: atosAnteriores,
   });
 
   const modelo = process.env.ANTHROPIC_MODEL || "claude-sonnet-5";
@@ -185,4 +198,44 @@ export async function classificarPublicacaoComTipoAto(input: unknown): Promise<R
 
   revalidatePath("/");
   return { sucesso: true };
+}
+
+const gerarResumoSchema = z.object({ publicacaoId: z.string().min(1) });
+
+export type ResultadoResumo = { sucesso: true; resumo: string } | { sucesso: false; erro: string };
+
+/**
+ * Gera (ou devolve, se já cacheado) o resumo em 3 linhas de uma publicação —
+ * ver src/lib/ia/resumo-publicacao.ts. Cacheado em Publicacao.resumoIa na
+ * primeira geração, nunca recalculado sozinho depois.
+ */
+export async function gerarResumoPublicacao(input: unknown): Promise<ResultadoResumo> {
+  const parsed = gerarResumoSchema.safeParse(input);
+  if (!parsed.success) {
+    return { sucesso: false, erro: parsed.error.issues[0]?.message ?? "payload inválido" };
+  }
+
+  const usuario = await obterUsuarioAtual();
+  const publicacao = await prisma.publicacao.findUnique({
+    where: { id: parsed.data.publicacaoId },
+    include: { processo: true },
+  });
+  if (!publicacao || (publicacao.processo && publicacao.processo.escritorioId !== usuario.escritorioId)) {
+    return { sucesso: false, erro: "publicação não encontrada neste escritório" };
+  }
+
+  if (publicacao.resumoIa) {
+    return { sucesso: true, resumo: publicacao.resumoIa };
+  }
+
+  try {
+    const resumo = await resumirPublicacao(publicacao.conteudo);
+    await prisma.publicacao.update({ where: { id: publicacao.id }, data: { resumoIa: resumo } });
+    return { sucesso: true, resumo };
+  } catch (erro) {
+    if (erro instanceof IaNaoConfiguradaError) {
+      return { sucesso: false, erro: erro.message };
+    }
+    return { sucesso: false, erro: erro instanceof Error ? erro.message : "falha ao gerar resumo" };
+  }
 }

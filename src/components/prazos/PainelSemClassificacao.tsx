@@ -5,6 +5,7 @@ import Link from "next/link";
 import { obterSugestaoTipoAtoPublicacao, classificarPublicacaoComTipoAto } from "@/lib/ia/acoes";
 import type { PublicacaoVinculadaSemPrazo } from "@/lib/prazos/fila";
 import { formatarDataCalendario } from "@/lib/formatacao";
+import { ResumoPublicacao } from "@/components/publicacoes/ResumoPublicacao";
 
 export interface TipoAtoOpcao {
   tipoAto: string;
@@ -106,7 +107,11 @@ function CartaoSemClassificacao({
         Ver central da publicação
       </Link>
       <blockquote className="mt-3 border-l-2 border-rule py-1 pl-4">
-        <p className="line-clamp-3 text-[0.9rem] italic leading-relaxed text-ink-soft">&ldquo;{publicacao.conteudo}&rdquo;</p>
+        <ResumoPublicacao
+          publicacaoId={publicacao.id}
+          resumoInicial={publicacao.resumoIa}
+          textoOriginal={publicacao.conteudo}
+        />
       </blockquote>
 
       {!sugestao && (

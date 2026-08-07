@@ -123,6 +123,9 @@ model Publicacao {
   hashConteudo         String   @unique
   status               StatusPublicacao @default(NAO_IDENTIFICADA)
   rawJson              Json
+  // Resumo em 3 linhas gerado por IA sob demanda (ver src/lib/ia/resumo-publicacao.ts)
+  // e cacheado aqui na primeira geração — nunca recalculado automaticamente.
+  resumoIa             String?
 
   processo   Processo? @relation(fields: [processoId], references: [id])
   processoId String?
