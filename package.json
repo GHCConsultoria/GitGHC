@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "sh -c 'if [ -n \"$DIRECT_URL\" ]; then npx prisma migrate deploy && npx prisma db seed; fi' && sh -c 'if [ -n \"$TURSO_DATABASE_URL\" ]; then node prisma/nutri/aplicar-schema.mjs && npx tsx prisma/nutri/seed.ts; fi' && next build",
+    "build": "sh -c 'if [ -n \"$DIRECT_URL\" ]; then npx prisma migrate deploy && npx prisma db seed; fi' && sh -c 'if [ -n \"$TURSO_DATABASE_URL\" ]; then (node prisma/nutri/aplicar-schema.mjs && npx tsx prisma/nutri/seed.ts) || echo \"[nosheipe] setup do Turso falhou (credencial expirada/rotacionada?) -- build do sistema juridico segue mesmo assim, NoSheipe e um produto separado\"; fi' && next build",
     "start": "next start",
     "lint": "next lint",
     "test": "vitest run",
