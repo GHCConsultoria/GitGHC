@@ -3,7 +3,12 @@ import { prisma } from "@/lib/prisma";
 import { paraDataCalendarioSaoPaulo } from "./calculo";
 
 const prazoComRelacoesArgs = Prisma.validator<Prisma.PrazoDefaultArgs>()({
-  include: { processo: true, publicacao: true },
+  include: {
+    processo: true,
+    publicacao: true,
+    responsavel: true,
+    tarefas: { orderBy: { criadoEm: "asc" } },
+  },
 });
 export type PrazoComRelacoes = Prisma.PrazoGetPayload<typeof prazoComRelacoesArgs>;
 
@@ -68,7 +73,13 @@ export async function buscarPublicacoesNaoIdentificadas() {
 }
 
 const prazoConfirmadoComRascunhoArgs = Prisma.validator<Prisma.PrazoDefaultArgs>()({
-  include: { processo: true, publicacao: true, rascunhosPeticao: { orderBy: { criadoEm: "desc" }, take: 1 } },
+  include: {
+    processo: true,
+    publicacao: true,
+    responsavel: true,
+    tarefas: { orderBy: { criadoEm: "asc" } },
+    rascunhosPeticao: { orderBy: { criadoEm: "desc" }, take: 1 },
+  },
 });
 export type PrazoConfirmadoComRascunho = Prisma.PrazoGetPayload<typeof prazoConfirmadoComRascunhoArgs>;
 
@@ -81,6 +92,21 @@ export async function buscarPrazosConfirmadosRecentes(escritorioId: string): Pro
     take: 20,
   });
 }
+
+/**
+ * Publicações vinculadas a um processo, mas que a classificação automática
+ * por palavra-chave (src/lib/prazos/classificacao.ts) não conseguiu
+ * resolver — candidatas à sugestão de tipo de ato por IA
+ * (src/lib/ia/sugestao-tipo-ato.ts).
+ */
+export async function buscarPublicacoesVinculadasSemPrazo(escritorioId: string) {
+  return prisma.publicacao.findMany({
+    where: { status: "VINCULADA", processo: { escritorioId }, prazos: { none: {} } },
+    include: { processo: true },
+    orderBy: { dataDisponibilizacao: "desc" },
+  });
+}
+export type PublicacaoVinculadaSemPrazo = Awaited<ReturnType<typeof buscarPublicacoesVinculadasSemPrazo>>[number];
 
 /** Lista enxuta de processos do escritório, para o seletor de vínculo manual. */
 export async function buscarProcessosParaVinculacao(escritorioId: string) {

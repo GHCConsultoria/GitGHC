@@ -2,13 +2,48 @@ import { TipoAlertaPrazo } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { contarDiasUteisAte } from "@/lib/prazos/fila";
 import { paraDataCalendarioSaoPaulo } from "@/lib/prazos/calculo";
+import { formatarDataCalendario } from "@/lib/formatacao";
+import { gerarTokenMarcarVisto } from "@/lib/prazos/token-visto";
 import { obterEmailSender } from "./email";
-import { obterWhatsappSender } from "./whatsapp";
+import { obterWhatsappSender, type ParametrosAlertaWhatsapp } from "./whatsapp";
+
+type TarefaPendente = { descricao: string } | undefined;
+
+/** "Elaborar contestação" se houver tarefa pendente vinculada; senão, a ação genérica de acordo com o status. */
+function acaoSugerida(statusPrazo: string, primeiraTarefaPendente: TarefaPendente): string {
+  if (primeiraTarefaPendente) return primeiraTarefaPendente.descricao;
+  return statusPrazo === "CONFIRMADO" ? "Verifique as tarefas do prazo no painel" : "Confirme o prazo no painel";
+}
+
+async function montarParametrosWhatsapp(
+  paraTelefone: string,
+  prazo: {
+    id: string;
+    status: string;
+    tipoAto: string;
+    dataFatal: Date;
+    processo: { cliente: string; numeroCnj: string };
+    tarefas: TarefaPendente[];
+  },
+): Promise<ParametrosAlertaWhatsapp> {
+  const tokenMarcarVisto = await gerarTokenMarcarVisto(prazo.id);
+  return {
+    paraTelefone,
+    cliente: prazo.processo.cliente,
+    numeroCnj: prazo.processo.numeroCnj,
+    tipoAto: prazo.tipoAto,
+    dataFatal: formatarDataCalendario(prazo.dataFatal),
+    acaoSugerida: acaoSugerida(prazo.status, prazo.tarefas[0]),
+    tokenMarcarVisto,
+  };
+}
 
 /**
  * Avisa os usuários de cada escritório sobre os prazos recém-criados nesta
- * execução (agrupados por escritório, um e-mail por usuário). Não precisa de
- * dedup: um Prazo só passa por este caminho uma vez, no run em que é criado.
+ * execução (agrupados por escritório para o e-mail resumo; o WhatsApp vai
+ * uma mensagem por prazo, porque é isso que faz o alerta ser acionável —
+ * ver src/lib/alertas/whatsapp.ts). Não precisa de dedup: um Prazo só passa
+ * por este caminho uma vez, no run em que é criado.
  */
 export async function enviarAlertasNovosPendentes(prazosCriadosIds: string[]): Promise<number> {
   if (prazosCriadosIds.length === 0) return 0;
@@ -17,6 +52,7 @@ export async function enviarAlertasNovosPendentes(prazosCriadosIds: string[]): P
     where: { id: { in: prazosCriadosIds } },
     include: {
       processo: { include: { escritorio: { include: { usuarios: true } } } },
+      tarefas: { where: { status: "PENDENTE" }, orderBy: { criadoEm: "asc" }, take: 1 },
     },
   });
 
@@ -54,10 +90,9 @@ export async function enviarAlertasNovosPendentes(prazosCriadosIds: string[]): P
       emailsEnviados += 1;
 
       if (usuario.telefoneWhatsapp) {
-        await whatsappSender.enviarAlerta({
-          paraTelefone: usuario.telefoneWhatsapp,
-          quantidade: prazosDoEscritorio.length,
-        });
+        for (const prazo of prazosDoEscritorio) {
+          await whatsappSender.enviarAlerta(await montarParametrosWhatsapp(usuario.telefoneWhatsapp, prazo));
+        }
       }
     }
   }
@@ -81,7 +116,10 @@ export async function enviarAlertasDeVencimentoProximo(): Promise<number> {
 
   const prazosConfirmados = await prisma.prazo.findMany({
     where: { status: "CONFIRMADO" },
-    include: { processo: { include: { escritorio: { include: { usuarios: true } } } } },
+    include: {
+      processo: { include: { escritorio: { include: { usuarios: true } } } },
+      tarefas: { where: { status: "PENDENTE" }, orderBy: { criadoEm: "asc" }, take: 1 },
+    },
   });
 
   const emailSender = obterEmailSender();
@@ -113,7 +151,7 @@ export async function enviarAlertasDeVencimentoProximo(): Promise<number> {
       emailsEnviados += 1;
 
       if (usuario.telefoneWhatsapp) {
-        await whatsappSender.enviarAlerta({ paraTelefone: usuario.telefoneWhatsapp, quantidade: 1 });
+        await whatsappSender.enviarAlerta(await montarParametrosWhatsapp(usuario.telefoneWhatsapp, prazo));
       }
     }
 

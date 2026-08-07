@@ -4,8 +4,15 @@ import { useState, useTransition } from "react";
 import { gerarRascunhoPeticao } from "@/lib/ia/acoes";
 import { formatarDataCalendario } from "@/lib/formatacao";
 import type { PrazoConfirmadoComRascunho } from "@/lib/prazos/fila";
+import { PainelTarefas, type UsuarioSelecionavel } from "./PainelTarefas";
 
-export function PainelConfirmados({ prazos }: { prazos: PrazoConfirmadoComRascunho[] }) {
+export function PainelConfirmados({
+  prazos,
+  usuarios,
+}: {
+  prazos: PrazoConfirmadoComRascunho[];
+  usuarios: UsuarioSelecionavel[];
+}) {
   if (prazos.length === 0) {
     return (
       <p className="paper-card rounded-sm px-5 py-8 text-center text-sm text-ink-faint">
@@ -18,14 +25,14 @@ export function PainelConfirmados({ prazos }: { prazos: PrazoConfirmadoComRascun
     <ul className="flex flex-col gap-3">
       {prazos.map((prazo, indice) => (
         <li key={prazo.id} className="stagger-in" style={{ "--stagger-index": indice } as React.CSSProperties}>
-          <ItemConfirmado prazo={prazo} />
+          <ItemConfirmado prazo={prazo} usuarios={usuarios} />
         </li>
       ))}
     </ul>
   );
 }
 
-function ItemConfirmado({ prazo }: { prazo: PrazoConfirmadoComRascunho }) {
+function ItemConfirmado({ prazo, usuarios }: { prazo: PrazoConfirmadoComRascunho; usuarios: UsuarioSelecionavel[] }) {
   const rascunhoExistente = prazo.rascunhosPeticao[0];
   const [conteudo, setConteudo] = useState(rascunhoExistente?.conteudo ?? "");
   const [mostrar, setMostrar] = useState(false);
@@ -105,6 +112,17 @@ function ItemConfirmado({ prazo }: { prazo: PrazoConfirmadoComRascunho }) {
           </div>
         </div>
       </div>
+
+      <PainelTarefas
+        prazoId={prazo.id}
+        tarefas={prazo.tarefas.map((tarefa) => ({
+          id: tarefa.id,
+          descricao: tarefa.descricao,
+          status: tarefa.status,
+          responsavelId: tarefa.responsavelId,
+        }))}
+        usuarios={usuarios}
+      />
     </div>
   );
 }

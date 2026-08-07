@@ -55,6 +55,9 @@ model Usuario {
   escritorioId String
 
   prazosConfirmados Prazo[]         @relation("PrazoConfirmadoPor")
+  prazosResponsavel Prazo[]         @relation("PrazoResponsavel")
+  tarefasResponsavel TarefaPrazo[]  @relation("TarefaResponsavel")
+  tarefasConcluidas  TarefaPrazo[]  @relation("TarefaConcluidaPor")
   logsAuditoria     LogAuditoria[]
   rascunhosPeticaoGerados RascunhoPeticao[]
 
@@ -169,13 +172,60 @@ model Prazo {
   confirmadoPorId String?
   confirmadoEm    DateTime?
 
+  // Quem está encarregado de agir sobre este prazo — independente de quem
+  // confirma a data. Atribuível a qualquer momento, mesmo antes da
+  // confirmação (ver src/lib/prazos/responsavel.ts).
+  responsavel   Usuario? @relation("PrazoResponsavel", fields: [responsavelId], references: [id])
+  responsavelId String?
+
+  // Timestamp de quando o link "marcar como visto" do alerta de WhatsApp foi
+  // clicado (ver src/lib/prazos/token-visto.ts) — não é confirmação, só
+  // sinaliza que alguém olhou o alerta.
+  visualizadoEm DateTime?
+
   alertasEnviados AlertaPrazoEnviado[]
   rascunhosPeticao RascunhoPeticao[]
+  tarefas          TarefaPrazo[]
 
   criadoEm     DateTime @default(now())
   atualizadoEm DateTime @updatedAt
 
   @@map("prazos")
+}
+
+// ---------------------------------------------------------------------------
+// Tarefas vinculadas ao prazo
+// ---------------------------------------------------------------------------
+
+enum StatusTarefa {
+  PENDENTE
+  CONCLUIDA
+}
+
+// Ação concreta derivada de um prazo (ex.: "elaborar contestação",
+// "protocolar petição"). Nunca apagada fisicamente, só muda de status —
+// mesmo princípio de auditoria do restante do domínio.
+model TarefaPrazo {
+  id  String @id @default(cuid())
+
+  prazo   Prazo  @relation(fields: [prazoId], references: [id])
+  prazoId String
+
+  descricao String
+
+  responsavel   Usuario? @relation("TarefaResponsavel", fields: [responsavelId], references: [id])
+  responsavelId String?
+
+  status StatusTarefa @default(PENDENTE)
+
+  concluidoPor   Usuario?  @relation("TarefaConcluidaPor", fields: [concluidoPorId], references: [id])
+  concluidoPorId String?
+  concluidoEm    DateTime?
+
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  @@map("tarefas_prazo")
 }
 
 // ---------------------------------------------------------------------------

@@ -7,10 +7,15 @@ import {
   buscarPrazosConfirmadosRecentes,
   buscarProcessosParaVinculacao,
   buscarPublicacoesNaoIdentificadas,
+  buscarPublicacoesVinculadasSemPrazo,
 } from "@/lib/prazos/fila";
+import { buscarPrazosParaDashboard } from "@/lib/prazos/dashboard";
+import { buscarUsuariosDoEscritorio } from "@/lib/usuarios/consultas";
+import { PainelDashboard } from "@/components/prazos/PainelDashboard";
 import { PainelPrazos } from "@/components/prazos/PainelPrazos";
 import { PainelNaoIdentificadas } from "@/components/prazos/PainelNaoIdentificadas";
 import { PainelConfirmados } from "@/components/prazos/PainelConfirmados";
+import { PainelSemClassificacao } from "@/components/prazos/PainelSemClassificacao";
 import { BotaoBuscarAgora } from "@/components/publicacoes/BotaoBuscarAgora";
 import { sair } from "@/app/login/actions";
 
@@ -38,13 +43,28 @@ export default async function Home() {
     throw erro;
   }
 
-  const [itensFila, publicacoesNaoIdentificadas, processos, escritorio, prazosConfirmados] = await Promise.all([
+  const [
+    itensFila,
+    publicacoesNaoIdentificadas,
+    processos,
+    escritorio,
+    prazosConfirmados,
+    itensDashboard,
+    usuarios,
+    publicacoesSemPrazo,
+    tiposAtoPrazo,
+  ] = await Promise.all([
     buscarFilaPrazosPendentes(usuario.escritorioId),
     buscarPublicacoesNaoIdentificadas(),
     buscarProcessosParaVinculacao(usuario.escritorioId),
     prisma.escritorio.findUniqueOrThrow({ where: { id: usuario.escritorioId } }),
     buscarPrazosConfirmadosRecentes(usuario.escritorioId),
+    buscarPrazosParaDashboard(usuario.escritorioId),
+    buscarUsuariosDoEscritorio(usuario.escritorioId),
+    buscarPublicacoesVinculadasSemPrazo(usuario.escritorioId),
+    prisma.tipoAtoPrazo.findMany({ orderBy: { tipoAto: "asc" } }),
   ]);
+  const usuariosSelecionaveis = usuarios.map((u) => ({ id: u.id, nome: u.nome }));
 
   return (
     <main className="mx-auto flex min-h-screen max-w-5xl flex-col gap-14 px-6 py-10 sm:px-10 sm:py-14">
@@ -105,12 +125,22 @@ export default async function Home() {
 
       <section>
         <div className="mb-6 flex items-baseline justify-between rule pt-6">
+          <h2 className="eyebrow pt-4">Painel de controle</h2>
+          <span className="font-display pt-4 text-2xl text-ink-faint">
+            {String(itensDashboard.length).padStart(2, "0")}
+          </span>
+        </div>
+        <PainelDashboard itens={itensDashboard} usuarios={usuariosSelecionaveis} />
+      </section>
+
+      <section>
+        <div className="mb-6 flex items-baseline justify-between rule pt-6">
           <h2 className="eyebrow pt-4">Aguardando confirmação</h2>
           <span className="font-display pt-4 text-2xl text-ink-faint">
             {String(itensFila.length).padStart(2, "0")}
           </span>
         </div>
-        <PainelPrazos itens={itensFila} />
+        <PainelPrazos itens={itensFila} usuarios={usuariosSelecionaveis} />
       </section>
 
       <section>
@@ -129,6 +159,20 @@ export default async function Home() {
 
       <section>
         <div className="mb-3 flex items-baseline justify-between rule pt-6">
+          <h2 className="eyebrow pt-4">Sem tipo de ato identificado</h2>
+          <span className="font-display pt-4 text-2xl text-ink-faint">
+            {String(publicacoesSemPrazo.length).padStart(2, "0")}
+          </span>
+        </div>
+        <p className="mb-6 max-w-2xl text-sm text-ink-soft">
+          Publicações já vinculadas a um processo, mas cujo tipo de ato a classificação automática não reconheceu. A
+          IA sugere; você decide.
+        </p>
+        <PainelSemClassificacao publicacoes={publicacoesSemPrazo} tiposDisponiveis={tiposAtoPrazo} />
+      </section>
+
+      <section>
+        <div className="mb-3 flex items-baseline justify-between rule pt-6">
           <h2 className="eyebrow pt-4">Confirmados</h2>
           <span className="font-display pt-4 text-2xl text-ink-faint">
             {String(prazosConfirmados.length).padStart(2, "0")}
@@ -138,7 +182,7 @@ export default async function Home() {
           Rascunho inicial de petição via IA, a partir do prazo confirmado — sempre um ponto de partida pra revisão,
           nunca protocolado automaticamente.
         </p>
-        <PainelConfirmados prazos={prazosConfirmados} />
+        <PainelConfirmados prazos={prazosConfirmados} usuarios={usuariosSelecionaveis} />
       </section>
     </main>
   );

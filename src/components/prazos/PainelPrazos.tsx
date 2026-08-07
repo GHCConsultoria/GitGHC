@@ -4,7 +4,9 @@ import { useState, useTransition } from "react";
 import { z } from "zod";
 import type { ItemFilaPrazo, NivelUrgencia } from "@/lib/prazos/fila";
 import { confirmarPrazo, descartarPrazo, editarDataFatalPrazo } from "@/lib/prazos/acoes";
+import { atribuirResponsavelPrazo } from "@/lib/prazos/tarefas";
 import { formatarDataCalendario } from "@/lib/formatacao";
+import { PainelTarefas, type UsuarioSelecionavel } from "./PainelTarefas";
 
 const passoSchema = z.object({ descricao: z.string(), data: z.string() });
 const passosSchema = z.array(passoSchema);
@@ -33,7 +35,7 @@ const ROTULO_URGENCIA: Record<NivelUrgencia, string> = {
 };
 
 
-export function PainelPrazos({ itens }: { itens: ItemFilaPrazo[] }) {
+export function PainelPrazos({ itens, usuarios }: { itens: ItemFilaPrazo[]; usuarios: UsuarioSelecionavel[] }) {
   if (itens.length === 0) {
     return (
       <p className="paper-card rounded-sm px-5 py-8 text-center text-sm text-ink-faint">
@@ -46,14 +48,14 @@ export function PainelPrazos({ itens }: { itens: ItemFilaPrazo[] }) {
     <ul className="flex flex-col gap-5">
       {itens.map((item, indice) => (
         <li key={item.prazo.id} className="stagger-in" style={{ "--stagger-index": indice } as React.CSSProperties}>
-          <CartaoPrazo item={item} />
+          <CartaoPrazo item={item} usuarios={usuarios} />
         </li>
       ))}
     </ul>
   );
 }
 
-function CartaoPrazo({ item }: { item: ItemFilaPrazo }) {
+function CartaoPrazo({ item, usuarios }: { item: ItemFilaPrazo; usuarios: UsuarioSelecionavel[] }) {
   const { prazo, urgencia, diasUteisRestantes } = item;
   const [mostrarPassos, setMostrarPassos] = useState(false);
   const [modoEdicao, setModoEdicao] = useState<"nenhum" | "editar" | "descartar">("nenhum");
@@ -61,6 +63,15 @@ function CartaoPrazo({ item }: { item: ItemFilaPrazo }) {
   const [pendente, iniciarTransicao] = useTransition();
 
   const passos = extrairPassos(prazo.detalhesCalculo);
+  const [responsavelId, setResponsavelId] = useState(prazo.responsavelId ?? "");
+  const [pendenteResponsavel, iniciarTransicaoResponsavel] = useTransition();
+
+  function alterarResponsavel(novoResponsavelId: string) {
+    setResponsavelId(novoResponsavelId);
+    iniciarTransicaoResponsavel(async () => {
+      await atribuirResponsavelPrazo({ prazoId: prazo.id, responsavelId: novoResponsavelId || null });
+    });
+  }
 
   function confirmar() {
     setErro(null);
@@ -80,12 +91,27 @@ function CartaoPrazo({ item }: { item: ItemFilaPrazo }) {
             {item.prazo.processo.numeroCnj} · {item.prazo.processo.tribunal}/{item.prazo.processo.uf}
           </p>
         </div>
-        <span
-          className={`inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-3 py-1 text-xs font-medium ${SELO_URGENCIA[urgencia]}`}
-        >
-          <span className="h-1.5 w-1.5 rounded-full bg-current" />
-          {ROTULO_URGENCIA[urgencia]} · {diasUteisRestantes}d úteis
-        </span>
+        <div className="flex shrink-0 flex-col items-end gap-2">
+          <span
+            className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border px-3 py-1 text-xs font-medium ${SELO_URGENCIA[urgencia]}`}
+          >
+            <span className="h-1.5 w-1.5 rounded-full bg-current" />
+            {ROTULO_URGENCIA[urgencia]} · {diasUteisRestantes}d úteis
+          </span>
+          <select
+            value={responsavelId}
+            disabled={pendenteResponsavel}
+            onChange={(evento) => alterarResponsavel(evento.target.value)}
+            className="rounded-sm border border-rule bg-paper-raised px-2 py-1 text-xs text-ink-soft outline-none focus:border-brass disabled:opacity-50"
+          >
+            <option value="">Sem responsável</option>
+            {usuarios.map((usuario) => (
+              <option key={usuario.id} value={usuario.id}>
+                {usuario.nome}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       <blockquote className="mt-4 border-l-2 border-rule py-1 pl-4">
@@ -211,6 +237,17 @@ function CartaoPrazo({ item }: { item: ItemFilaPrazo }) {
           }}
         />
       )}
+
+      <PainelTarefas
+        prazoId={prazo.id}
+        tarefas={prazo.tarefas.map((tarefa) => ({
+          id: tarefa.id,
+          descricao: tarefa.descricao,
+          status: tarefa.status,
+          responsavelId: tarefa.responsavelId,
+        }))}
+        usuarios={usuarios}
+      />
     </article>
   );
 }
