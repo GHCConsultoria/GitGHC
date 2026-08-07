@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import type { ItemDashboardPrazo, BucketDashboard } from "@/lib/prazos/dashboard";
 import { formatarDataCalendario } from "@/lib/formatacao";
 import type { UsuarioSelecionavel } from "./PainelTarefas";
@@ -92,7 +93,10 @@ function CartaoDashboard({ item }: { item: ItemDashboardPrazo }) {
   const { prazo, bucket, diasCorridosRestantes } = item;
 
   return (
-    <article className={`paper-card rounded-sm border-l-[3px] p-3.5 ${COR_BUCKET[bucket]}`}>
+    <Link
+      href={`/publicacoes/${prazo.publicacaoId}`}
+      className={`paper-card paper-card-interactive block rounded-sm border-l-[3px] p-3.5 ${COR_BUCKET[bucket]}`}
+    >
       <p className="truncate text-sm font-medium text-ink">{prazo.processo.cliente}</p>
       <p className="mt-0.5 truncate font-data text-xs text-ink-faint">{prazo.processo.numeroCnj}</p>
       <p className="mt-1.5 text-xs text-ink-soft">{prazo.tipoAto}</p>
@@ -112,7 +116,7 @@ function CartaoDashboard({ item }: { item: ItemDashboardPrazo }) {
         </span>
         {prazo.responsavel && <span className="truncate text-ink-faint">{prazo.responsavel.nome}</span>}
       </div>
-    </article>
+    </Link>
   );
 }
 

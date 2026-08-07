@@ -75,19 +75,10 @@ export default async function Home() {
   const podeConfirmar = podeConfirmarPrazos(usuario);
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-5xl flex-col gap-14 px-6 py-10 sm:px-10 sm:py-14">
-      <header className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <p className="eyebrow mb-3">GitGHC · Conferência de prazos</p>
-          <h1 className="font-display text-4xl leading-none tracking-tight sm:text-5xl">
-            Publicações <span className="italic text-ink-soft">&amp;</span> prazos
-          </h1>
-          <p className="mt-3 max-w-lg text-[0.95rem] leading-relaxed text-ink-soft">
-            O sistema propõe o prazo; a confirmação é sempre sua. Nada vira definitivo sem você clicar em{" "}
-            <strong className="font-medium text-ink">Confirmar</strong>.
-          </p>
-        </div>
-        <nav className="flex shrink-0 items-center gap-5 text-sm">
+    <>
+      <nav className="sticky top-0 z-20 border-b border-rule bg-paper/85 backdrop-blur-md">
+        <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-x-5 gap-y-2 px-6 py-3 text-sm sm:px-10">
+          <span className="eyebrow mr-2 shrink-0 text-ink">GitGHC</span>
           <Link
             href="/escritorio"
             className="border-b border-transparent pb-0.5 text-ink-soft transition-colors hover:border-brass hover:text-ink"
@@ -130,7 +121,7 @@ export default async function Home() {
           >
             Painel de saúde
           </Link>
-          <form action={sair}>
+          <form action={sair} className="ml-auto">
             <button
               type="submit"
               className="border-b border-transparent pb-0.5 text-ink-soft transition-colors hover:border-brass hover:text-ink"
@@ -138,10 +129,22 @@ export default async function Home() {
               Sair
             </button>
           </form>
-        </nav>
-      </header>
+        </div>
+      </nav>
 
-      <section>
+      <main className="mx-auto flex min-h-screen max-w-5xl flex-col gap-14 px-6 py-10 sm:px-10 sm:py-14">
+        <header>
+          <p className="eyebrow mb-3">GitGHC · Conferência de prazos</p>
+          <h1 className="font-display text-4xl leading-none tracking-tight sm:text-5xl">
+            Publicações <span className="italic text-ink-soft">&amp;</span> prazos
+          </h1>
+          <p className="mt-3 max-w-lg text-[0.95rem] leading-relaxed text-ink-soft">
+            O sistema propõe o prazo; a confirmação é sempre sua. Nada vira definitivo sem você clicar em{" "}
+            <strong className="font-medium text-ink">Confirmar</strong>.
+          </p>
+        </header>
+
+        <section>
         <div className="mb-6 flex items-baseline justify-between rule pt-6">
           <h2 className="eyebrow pt-4">Riscos</h2>
           <span className="font-display pt-4 text-2xl text-ink-faint">
@@ -213,7 +216,8 @@ export default async function Home() {
           nunca protocolado automaticamente.
         </p>
         <PainelConfirmados prazos={prazosConfirmados} usuarios={usuariosSelecionaveis} podeConfirmar={podeConfirmar} />
-      </section>
-    </main>
+        </section>
+      </main>
+    </>
   );
 }

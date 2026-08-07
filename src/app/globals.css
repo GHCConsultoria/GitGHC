@@ -34,9 +34,16 @@
   --color-on-sheipe: #04150a;
 
   --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.4), 0 12px 40px -16px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.03);
+  --shadow-card-hover: 0 2px 4px rgba(0, 0, 0, 0.45), 0 20px 56px -18px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  --shadow-focus: 0 0 0 3px color-mix(in srgb, var(--color-brass) 35%, transparent);
 
   --grid-line: rgba(255, 255, 255, 0.035);
   --scanline: rgba(255, 255, 255, 0.018);
+
+  /* Curvas fortes o bastante pra parecer intencional — as padrão do browser
+     são fracas demais e a interface fica com "peso" errado. */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
 
   /* Fixas — não trocam com o tema. Painel de assinatura (ex.: login) fica
      sempre no mesmo tom, mesmo se o resto virar claro. */
@@ -76,6 +83,8 @@
     --color-on-sheipe: #f0fdf4;
 
     --shadow-card: 0 1px 2px rgba(16, 18, 21, 0.04), 0 8px 24px -12px rgba(16, 18, 21, 0.12);
+    --shadow-card-hover: 0 2px 4px rgba(16, 18, 21, 0.06), 0 14px 32px -12px rgba(16, 18, 21, 0.18);
+    --shadow-focus: 0 0 0 3px color-mix(in srgb, var(--color-brass) 30%, transparent);
 
     --grid-line: rgba(16, 18, 21, 0.045);
     --scanline: rgba(16, 18, 21, 0.02);
@@ -113,6 +122,8 @@
   --color-sheipe-deep: #4ade80;
   --color-on-sheipe: #04150a;
   --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.4), 0 12px 40px -16px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.03);
+  --shadow-card-hover: 0 2px 4px rgba(0, 0, 0, 0.45), 0 20px 56px -18px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  --shadow-focus: 0 0 0 3px color-mix(in srgb, var(--color-brass) 35%, transparent);
   --grid-line: rgba(255, 255, 255, 0.035);
   --scanline: rgba(255, 255, 255, 0.018);
 }
@@ -140,6 +151,8 @@
   --color-sheipe-deep: #15803d;
   --color-on-sheipe: #f0fdf4;
   --shadow-card: 0 1px 2px rgba(16, 18, 21, 0.04), 0 8px 24px -12px rgba(16, 18, 21, 0.12);
+  --shadow-card-hover: 0 2px 4px rgba(16, 18, 21, 0.06), 0 14px 32px -12px rgba(16, 18, 21, 0.18);
+  --shadow-focus: 0 0 0 3px color-mix(in srgb, var(--color-brass) 30%, transparent);
   --grid-line: rgba(16, 18, 21, 0.045);
   --scanline: rgba(16, 18, 21, 0.02);
 }
@@ -185,6 +198,47 @@ body > div {
   color: var(--color-on-brass);
 }
 
+/*
+ * Feedback de toque global — todo <button> do site, não importa quais
+ * classes utilitárias de transição já tenham (transition-colors etc.).
+ * !important é deliberado aqui: é a única forma de garantir que `transform`
+ * sempre entre na lista de propriedades animadas, sem precisar tocar botão
+ * por botão em ~20 arquivos — um único lugar garante que toda ação clicável
+ * do sistema responda ao toque com a mesma sensação.
+ */
+button:not(:disabled) {
+  transition-property: transform, color, background-color, border-color, box-shadow, opacity !important;
+  transition-duration: 160ms !important;
+  transition-timing-function: var(--ease-out) !important;
+}
+button:not(:disabled):active {
+  transform: scale(0.97);
+}
+
+/* Anel de foco só pra navegação por teclado — mouse/touch não acende.
+   box-shadow segue o border-radius que o elemento já tiver, não redeclara.
+   Fallback pra navegador sem color-mix(): perde o brilho, mas nunca fica
+   sem indicador de foco nenhum. */
+:focus-visible {
+  outline: 2px solid var(--color-brass);
+  outline-offset: 2px;
+}
+@supports (color: color-mix(in srgb, red, blue)) {
+  :focus-visible {
+    outline: none;
+    box-shadow: var(--shadow-focus);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  button:not(:disabled) {
+    transition-property: color, background-color, border-color, opacity !important;
+  }
+  button:not(:disabled):active {
+    transform: none;
+  }
+}
+
 @layer utilities {
   .text-balance {
     text-wrap: balance;
@@ -207,6 +261,23 @@ body > div {
     background: var(--color-paper-raised);
     border: 1px solid var(--color-rule);
     box-shadow: var(--shadow-card);
+  }
+
+  /* Pra cards que são de fato clicáveis (envolvem um Link inteiro, por
+     exemplo) — não aplicar em cards que só contêm formulário/seletor, senão
+     o hover promete um clique que não existe. */
+  .paper-card-interactive {
+    transition: transform 200ms var(--ease-out), box-shadow 200ms var(--ease-out), border-color 200ms var(--ease-out);
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .paper-card-interactive:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-card-hover);
+      border-color: var(--color-brass);
+    }
+  }
+  .paper-card-interactive:active {
+    transform: translateY(-1px) scale(0.99);
   }
 
   /* Truque do grid-template-rows para animar altura "auto" sem JS medindo px. */
@@ -245,5 +316,11 @@ body > div {
   }
   .expand {
     transition: none;
+  }
+  .paper-card-interactive,
+  .paper-card-interactive:hover,
+  .paper-card-interactive:active {
+    transition: box-shadow 200ms var(--ease-out), border-color 200ms var(--ease-out);
+    transform: none;
   }
 }
