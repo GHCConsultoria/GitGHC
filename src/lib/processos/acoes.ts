@@ -111,3 +111,34 @@ export async function criarProcesso(input: unknown): Promise<ResultadoAcao> {
   revalidatePath("/");
   return { sucesso: true };
 }
+
+const atribuirResponsavelSchema = z.object({
+  processoId: z.string().min(1),
+  responsavelId: z.string().min(1).nullable(),
+});
+
+/** Define/remove o responsável por um processo — aberto a qualquer papel (não é uma decisão de responsabilidade legal sobre um prazo, é só organização de quem cuida do quê). */
+export async function atribuirResponsavelProcesso(input: unknown): Promise<ResultadoAcao> {
+  const parsed = atribuirResponsavelSchema.safeParse(input);
+  if (!parsed.success) {
+    return { sucesso: false, erro: parsed.error.issues[0]?.message ?? "payload inválido" };
+  }
+
+  const usuario = await obterUsuarioAtual();
+  const processo = await prisma.processo.findUnique({ where: { id: parsed.data.processoId } });
+  if (!processo || processo.escritorioId !== usuario.escritorioId) {
+    return { sucesso: false, erro: "processo não encontrado neste escritório" };
+  }
+
+  if (parsed.data.responsavelId) {
+    const responsavel = await prisma.usuario.findUnique({ where: { id: parsed.data.responsavelId } });
+    if (!responsavel || responsavel.escritorioId !== usuario.escritorioId) {
+      return { sucesso: false, erro: "responsável inválido" };
+    }
+  }
+
+  await prisma.processo.update({ where: { id: processo.id }, data: { responsavelId: parsed.data.responsavelId } });
+
+  revalidatePath("/processos");
+  return { sucesso: true };
+}

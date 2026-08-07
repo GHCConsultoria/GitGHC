@@ -10,9 +10,11 @@ import { PainelTarefas, type UsuarioSelecionavel } from "./PainelTarefas";
 export function PainelConfirmados({
   prazos,
   usuarios,
+  podeConfirmar,
 }: {
   prazos: PrazoConfirmadoComRascunho[];
   usuarios: UsuarioSelecionavel[];
+  podeConfirmar: boolean;
 }) {
   if (prazos.length === 0) {
     return (
@@ -26,14 +28,22 @@ export function PainelConfirmados({
     <ul className="flex flex-col gap-3">
       {prazos.map((prazo, indice) => (
         <li key={prazo.id} className="stagger-in" style={{ "--stagger-index": indice } as React.CSSProperties}>
-          <ItemConfirmado prazo={prazo} usuarios={usuarios} />
+          <ItemConfirmado prazo={prazo} usuarios={usuarios} podeConfirmar={podeConfirmar} />
         </li>
       ))}
     </ul>
   );
 }
 
-function ItemConfirmado({ prazo, usuarios }: { prazo: PrazoConfirmadoComRascunho; usuarios: UsuarioSelecionavel[] }) {
+function ItemConfirmado({
+  prazo,
+  usuarios,
+  podeConfirmar,
+}: {
+  prazo: PrazoConfirmadoComRascunho;
+  usuarios: UsuarioSelecionavel[];
+  podeConfirmar: boolean;
+}) {
   const rascunhoExistente = prazo.rascunhosPeticao[0];
   const [conteudo, setConteudo] = useState(rascunhoExistente?.conteudo ?? "");
   const [mostrar, setMostrar] = useState(false);
@@ -101,14 +111,16 @@ function ItemConfirmado({ prazo, usuarios }: { prazo: PrazoConfirmadoComRascunho
         >
           {pendente ? "Gerando…" : rascunhoExistente ? "Gerar novo rascunho com IA" : "Gerar rascunho com IA"}
         </button>
-        <button
-          type="button"
-          disabled={pendenteCumprir}
-          onClick={cumprir}
-          className="rounded-sm border border-calm-line/40 px-4 py-1.5 text-sm font-medium text-calm transition-colors hover:bg-calm-bg disabled:opacity-50"
-        >
-          {pendenteCumprir ? "Marcando…" : "Marcar como cumprido"}
-        </button>
+        {podeConfirmar && (
+          <button
+            type="button"
+            disabled={pendenteCumprir}
+            onClick={cumprir}
+            className="rounded-sm border border-calm-line/40 px-4 py-1.5 text-sm font-medium text-calm transition-colors hover:bg-calm-bg disabled:opacity-50"
+          >
+            {pendenteCumprir ? "Marcando…" : "Marcar como cumprido"}
+          </button>
+        )}
         {conteudo && (
           <button
             type="button"

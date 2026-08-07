@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { obterUsuarioAtual, UsuarioNaoAutenticadoError, UsuarioNaoCadastradoError } from "@/lib/auth";
 import { buscarUsuariosDoEscritorio } from "@/lib/usuarios/consultas";
+import { podeGerenciarUsuarios } from "@/lib/permissoes";
 import { FormularioNovoUsuario } from "@/components/usuarios/FormularioNovoUsuario";
 import { FormularioTelefoneWhatsapp } from "@/components/usuarios/FormularioTelefoneWhatsapp";
 
@@ -49,10 +50,14 @@ export default async function Usuarios() {
         </p>
       </header>
 
-      <section>
-        <h2 className="eyebrow mb-4 rule pt-6">Novo usuário</h2>
-        <FormularioNovoUsuario />
-      </section>
+      {podeGerenciarUsuarios(usuarioAtual) ? (
+        <section>
+          <h2 className="eyebrow mb-4 rule pt-6">Novo usuário</h2>
+          <FormularioNovoUsuario />
+        </section>
+      ) : (
+        <p className="rule pt-6 text-xs text-ink-faint">Só advogados podem cadastrar novos usuários.</p>
+      )}
 
       <section>
         <div className="mb-6 flex items-baseline justify-between rule pt-6">

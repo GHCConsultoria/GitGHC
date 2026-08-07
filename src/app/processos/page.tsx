@@ -2,7 +2,9 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { obterUsuarioAtual, UsuarioNaoAutenticadoError, UsuarioNaoCadastradoError } from "@/lib/auth";
 import { buscarProcessosDoEscritorio } from "@/lib/processos/consultas";
+import { buscarUsuariosDoEscritorio } from "@/lib/usuarios/consultas";
 import { FormularioNovoProcesso } from "@/components/processos/FormularioNovoProcesso";
+import { SeletorResponsavel } from "@/components/processos/SeletorResponsavel";
 
 export const dynamic = "force-dynamic";
 
@@ -28,7 +30,11 @@ export default async function Processos() {
     throw erro;
   }
 
-  const processos = await buscarProcessosDoEscritorio(usuario.escritorioId);
+  const [processos, usuarios] = await Promise.all([
+    buscarProcessosDoEscritorio(usuario.escritorioId),
+    buscarUsuariosDoEscritorio(usuario.escritorioId),
+  ]);
+  const usuariosSelecionaveis = usuarios.map((u) => ({ id: u.id, nome: u.nome }));
 
   return (
     <main className="mx-auto flex min-h-screen max-w-4xl flex-col gap-12 px-6 py-10 sm:px-10 sm:py-14">
@@ -64,13 +70,20 @@ export default async function Processos() {
         ) : (
           <ul className="flex flex-col gap-3">
             {processos.map((processo) => (
-              <li key={processo.id} className="paper-card rounded-sm p-4">
-                <p className="font-display text-lg leading-snug">{processo.cliente}</p>
-                <p className="text-sm text-ink-soft">{processo.varaOrgao}</p>
-                <p className="mt-1 font-data text-xs text-ink-faint">
-                  {processo.numeroCnj} · {processo.tribunal}/{processo.uf}
-                  {processo.prazoEmDobro && " · prazo em dobro"}
-                </p>
+              <li key={processo.id} className="paper-card flex flex-wrap items-start justify-between gap-3 rounded-sm p-4">
+                <div>
+                  <p className="font-display text-lg leading-snug">{processo.cliente}</p>
+                  <p className="text-sm text-ink-soft">{processo.varaOrgao}</p>
+                  <p className="mt-1 font-data text-xs text-ink-faint">
+                    {processo.numeroCnj} · {processo.tribunal}/{processo.uf}
+                    {processo.prazoEmDobro && " · prazo em dobro"}
+                  </p>
+                </div>
+                <SeletorResponsavel
+                  processoId={processo.id}
+                  responsavelIdAtual={processo.responsavelId}
+                  usuarios={usuariosSelecionaveis}
+                />
               </li>
             ))}
           </ul>

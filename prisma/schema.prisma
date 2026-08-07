@@ -56,6 +56,7 @@ model Usuario {
 
   prazosConfirmados Prazo[]         @relation("PrazoConfirmadoPor")
   prazosResponsavel Prazo[]         @relation("PrazoResponsavel")
+  processosResponsavel Processo[]   @relation("ProcessoResponsavel")
   tarefasResponsavel TarefaPrazo[]  @relation("TarefaResponsavel")
   tarefasConcluidas  TarefaPrazo[]  @relation("TarefaConcluidaPor")
   logsAuditoria     LogAuditoria[]
@@ -91,6 +92,9 @@ model Processo {
 
   escritorio   Escritorio @relation(fields: [escritorioId], references: [id])
   escritorioId String
+
+  responsavel   Usuario? @relation("ProcessoResponsavel", fields: [responsavelId], references: [id])
+  responsavelId String?
 
   publicacoes Publicacao[]
   prazos      Prazo[]

@@ -28,7 +28,15 @@ function formatarDiaCurto(chave: string): string {
 }
 
 /** Agenda semanal com arrastar-e-soltar: só prazos PENDENTE_CONFIRMACAO podem ser arrastados (editarDataFatalPrazo exige esse status e uma justificativa). */
-export function PainelAgendaSemana({ diasChave, itens }: { diasChave: string[]; itens: ItemAgenda[] }) {
+export function PainelAgendaSemana({
+  diasChave,
+  itens,
+  podeReagendar,
+}: {
+  diasChave: string[];
+  itens: ItemAgenda[];
+  podeReagendar: boolean;
+}) {
   const [arrastandoId, setArrastandoId] = useState<string | null>(null);
   const [pendente, setPendente] = useState<{ item: ItemAgenda; novaDataChave: string } | null>(null);
 
@@ -44,7 +52,7 @@ export function PainelAgendaSemana({ diasChave, itens }: { diasChave: string[]; 
   }, [diasChave, itens]);
 
   function aoSoltarEm(diaChave: string) {
-    if (!arrastandoId) return;
+    if (!arrastandoId || !podeReagendar) return;
     const item = itens.find((candidato) => candidato.id === arrastandoId);
     setArrastandoId(null);
     if (!item || item.status !== "PENDENTE_CONFIRMACAO" || item.dataChave === diaChave) return;
@@ -66,11 +74,13 @@ export function PainelAgendaSemana({ diasChave, itens }: { diasChave: string[]; 
               {(itensPorDia.get(chave) ?? []).map((item) => (
                 <li
                   key={item.id}
-                  draggable={item.status === "PENDENTE_CONFIRMACAO"}
+                  draggable={podeReagendar && item.status === "PENDENTE_CONFIRMACAO"}
                   onDragStart={() => setArrastandoId(item.id)}
                   onDragEnd={() => setArrastandoId(null)}
                   className={`paper-card rounded-sm border-l-[3px] p-2 text-xs ${RUBRICA_STATUS[item.status]} ${
-                    item.status === "PENDENTE_CONFIRMACAO" ? "cursor-grab active:cursor-grabbing" : "opacity-80"
+                    podeReagendar && item.status === "PENDENTE_CONFIRMACAO"
+                      ? "cursor-grab active:cursor-grabbing"
+                      : "opacity-80"
                   }`}
                 >
                   <Link href={`/publicacoes/${item.publicacaoId}`} className="block hover:text-brass">
@@ -85,8 +95,9 @@ export function PainelAgendaSemana({ diasChave, itens }: { diasChave: string[]; 
       </div>
 
       <p className="mt-3 text-xs text-ink-faint">
-        Arraste um prazo <span className="text-attention">ainda não confirmado</span> para outro dia pra reagendar
-        (pede justificativa). Prazos confirmados/cumpridos são só leitura aqui.
+        {podeReagendar
+          ? "Arraste um prazo ainda não confirmado para outro dia pra reagendar (pede justificativa). Prazos confirmados/cumpridos são só leitura aqui."
+          : "Só advogados podem reagendar prazos — esta agenda está em modo leitura pro seu papel."}
       </p>
 
       {pendente && (

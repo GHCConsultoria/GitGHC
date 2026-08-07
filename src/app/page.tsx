@@ -12,6 +12,7 @@ import {
 import { buscarPrazosParaDashboard } from "@/lib/prazos/dashboard";
 import { calcularRiscos, buscarAlertasFeriadosNaoRevisados } from "@/lib/prazos/risco";
 import { buscarUsuariosDoEscritorio } from "@/lib/usuarios/consultas";
+import { podeConfirmarPrazos } from "@/lib/permissoes";
 import { PainelDashboard } from "@/components/prazos/PainelDashboard";
 import { PainelRiscos } from "@/components/prazos/PainelRiscos";
 import { PainelPrazos } from "@/components/prazos/PainelPrazos";
@@ -71,6 +72,7 @@ export default async function Home() {
     buscarAlertasFeriadosNaoRevisados(usuario.escritorioId),
   ]);
   const usuariosSelecionaveis = usuarios.map((u) => ({ id: u.id, nome: u.nome }));
+  const podeConfirmar = podeConfirmarPrazos(usuario);
 
   return (
     <main className="mx-auto flex min-h-screen max-w-5xl flex-col gap-14 px-6 py-10 sm:px-10 sm:py-14">
@@ -168,7 +170,7 @@ export default async function Home() {
             {String(itensFila.length).padStart(2, "0")}
           </span>
         </div>
-        <PainelPrazos itens={itensFila} usuarios={usuariosSelecionaveis} />
+        <PainelPrazos itens={itensFila} usuarios={usuariosSelecionaveis} podeConfirmar={podeConfirmar} />
       </section>
 
       <section>
@@ -210,7 +212,7 @@ export default async function Home() {
           Rascunho inicial de petição via IA, a partir do prazo confirmado — sempre um ponto de partida pra revisão,
           nunca protocolado automaticamente.
         </p>
-        <PainelConfirmados prazos={prazosConfirmados} usuarios={usuariosSelecionaveis} />
+        <PainelConfirmados prazos={prazosConfirmados} usuarios={usuariosSelecionaveis} podeConfirmar={podeConfirmar} />
       </section>
     </main>
   );

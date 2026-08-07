@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { obterUsuarioAtual, UsuarioNaoAutenticadoError } from "@/lib/auth";
 import { paraDataCalendarioSaoPaulo } from "@/lib/prazos/calculo";
+import { podeConfirmarPrazos } from "@/lib/permissoes";
 import { PainelAgendaSemana, type ItemAgenda } from "@/components/prazos/PainelAgendaSemana";
 
 export const dynamic = "force-dynamic";
@@ -91,7 +92,7 @@ export default async function PaginaAgenda({ searchParams }: { searchParams: { i
         </nav>
       </header>
 
-      <PainelAgendaSemana diasChave={diasChave} itens={itens} />
+      <PainelAgendaSemana diasChave={diasChave} itens={itens} podeReagendar={podeConfirmarPrazos(usuario)} />
     </main>
   );
 }

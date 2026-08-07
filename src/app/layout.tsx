@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { IBM_Plex_Sans, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 
@@ -23,6 +23,15 @@ const plexMono = JetBrains_Mono({
 export const metadata: Metadata = {
   title: "GitGHC — Conferência de Publicações e Prazos",
   description: "Triagem de publicações e confirmação humana de prazos processuais.",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "GitGHC",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#0a0b0d",
 };
 
 export default function RootLayout({

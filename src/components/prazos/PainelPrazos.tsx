@@ -37,7 +37,15 @@ const ROTULO_URGENCIA: Record<NivelUrgencia, string> = {
 };
 
 
-export function PainelPrazos({ itens, usuarios }: { itens: ItemFilaPrazo[]; usuarios: UsuarioSelecionavel[] }) {
+export function PainelPrazos({
+  itens,
+  usuarios,
+  podeConfirmar,
+}: {
+  itens: ItemFilaPrazo[];
+  usuarios: UsuarioSelecionavel[];
+  podeConfirmar: boolean;
+}) {
   if (itens.length === 0) {
     return (
       <p className="paper-card rounded-sm px-5 py-8 text-center text-sm text-ink-faint">
@@ -50,14 +58,22 @@ export function PainelPrazos({ itens, usuarios }: { itens: ItemFilaPrazo[]; usua
     <ul className="flex flex-col gap-5">
       {itens.map((item, indice) => (
         <li key={item.prazo.id} className="stagger-in" style={{ "--stagger-index": indice } as React.CSSProperties}>
-          <CartaoPrazo item={item} usuarios={usuarios} />
+          <CartaoPrazo item={item} usuarios={usuarios} podeConfirmar={podeConfirmar} />
         </li>
       ))}
     </ul>
   );
 }
 
-function CartaoPrazo({ item, usuarios }: { item: ItemFilaPrazo; usuarios: UsuarioSelecionavel[] }) {
+function CartaoPrazo({
+  item,
+  usuarios,
+  podeConfirmar,
+}: {
+  item: ItemFilaPrazo;
+  usuarios: UsuarioSelecionavel[];
+  podeConfirmar: boolean;
+}) {
   const { prazo, urgencia, diasUteisRestantes } = item;
   const [mostrarPassos, setMostrarPassos] = useState(false);
   const [modoEdicao, setModoEdicao] = useState<"nenhum" | "editar" | "descartar">("nenhum");
@@ -187,7 +203,13 @@ function CartaoPrazo({ item, usuarios }: { item: ItemFilaPrazo; usuarios: Usuari
 
       {erro && <p className="mt-3 text-sm text-urgent">{erro}</p>}
 
-      {modoEdicao === "nenhum" && (
+      {!podeConfirmar && (
+        <p className="mt-5 border-t border-rule pt-5 text-xs text-ink-faint">
+          Só advogados podem confirmar, editar ou descartar prazos — peça pra alguém com esse papel.
+        </p>
+      )}
+
+      {podeConfirmar && modoEdicao === "nenhum" && (
         <div className="mt-5 flex flex-wrap gap-2.5 border-t border-rule pt-5">
           <button
             type="button"

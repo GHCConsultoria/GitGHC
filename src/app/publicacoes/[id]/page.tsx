@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { obterUsuarioAtual, UsuarioNaoAutenticadoError } from "@/lib/auth";
+import { podeConfirmarPrazos } from "@/lib/permissoes";
 import { buscarPublicacaoDetalhada, buscarHistoricoPublicacao } from "@/lib/prazos/fila";
 import { formatarDataCalendario, formatarDataHora } from "@/lib/formatacao";
 import { BotaoConfirmarPrazo } from "@/components/publicacoes/BotaoConfirmarPrazo";
@@ -142,7 +143,11 @@ export default async function PaginaPublicacao({ params }: { params: { id: strin
 
                 {prazo.status === "PENDENTE_CONFIRMACAO" && (
                   <div className="mt-5 border-t border-rule pt-5">
-                    <BotaoConfirmarPrazo prazoId={prazo.id} />
+                    {podeConfirmarPrazos(usuario) ? (
+                      <BotaoConfirmarPrazo prazoId={prazo.id} />
+                    ) : (
+                      <p className="text-xs text-ink-faint">Só advogados podem confirmar prazos.</p>
+                    )}
                   </div>
                 )}
               </li>

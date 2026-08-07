@@ -7,6 +7,7 @@ import { RoleUsuario } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { obterUsuarioAtual } from "@/lib/auth";
 import { criarClienteSupabaseAdmin } from "@/lib/supabase/admin";
+import { podeGerenciarUsuarios, MENSAGEM_APENAS_ADVOGADO } from "@/lib/permissoes";
 
 export type ResultadoCriarUsuario =
   | { sucesso: true; email: string; senhaTemporaria: string }
@@ -41,6 +42,9 @@ export async function criarUsuario(input: unknown): Promise<ResultadoCriarUsuari
   }
 
   const usuarioAtual = await obterUsuarioAtual();
+  if (!podeGerenciarUsuarios(usuarioAtual)) {
+    return { sucesso: false, erro: MENSAGEM_APENAS_ADVOGADO };
+  }
 
   let supabaseAdmin: ReturnType<typeof criarClienteSupabaseAdmin>;
   try {

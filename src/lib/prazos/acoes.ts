@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { obterUsuarioAtual } from "@/lib/auth";
+import { podeConfirmarPrazos, MENSAGEM_APENAS_ADVOGADO } from "@/lib/permissoes";
 
 export type ResultadoAcao = { sucesso: true } | { sucesso: false; erro: string };
 
@@ -13,7 +14,7 @@ function primeiraMensagemDeErro(erro: z.ZodError, fallback: string): string {
 
 const confirmarPrazoSchema = z.object({ prazoId: z.string().min(1) });
 
-/** Confirmar: única forma de um prazo sair de PENDENTE_CONFIRMACAO para CONFIRMADO. Sempre auditado. */
+/** Confirmar: única forma de um prazo sair de PENDENTE_CONFIRMACAO para CONFIRMADO. Sempre auditado. Só ADVOGADO — é quem carrega a responsabilidade legal pela data. */
 export async function confirmarPrazo(input: unknown): Promise<ResultadoAcao> {
   const parsed = confirmarPrazoSchema.safeParse(input);
   if (!parsed.success) {
@@ -21,6 +22,9 @@ export async function confirmarPrazo(input: unknown): Promise<ResultadoAcao> {
   }
 
   const usuario = await obterUsuarioAtual();
+  if (!podeConfirmarPrazos(usuario)) {
+    return { sucesso: false, erro: MENSAGEM_APENAS_ADVOGADO };
+  }
   const prazo = await prisma.prazo.findUnique({ where: { id: parsed.data.prazoId } });
   if (!prazo) return { sucesso: false, erro: "prazo nao encontrado" };
   if (prazo.status !== "PENDENTE_CONFIRMACAO") {
@@ -63,6 +67,9 @@ export async function editarDataFatalPrazo(input: unknown): Promise<ResultadoAca
   }
 
   const usuario = await obterUsuarioAtual();
+  if (!podeConfirmarPrazos(usuario)) {
+    return { sucesso: false, erro: MENSAGEM_APENAS_ADVOGADO };
+  }
   const prazo = await prisma.prazo.findUnique({ where: { id: parsed.data.prazoId } });
   if (!prazo) return { sucesso: false, erro: "prazo nao encontrado" };
   if (prazo.status !== "PENDENTE_CONFIRMACAO") {
@@ -102,6 +109,9 @@ export async function descartarPrazo(input: unknown): Promise<ResultadoAcao> {
   }
 
   const usuario = await obterUsuarioAtual();
+  if (!podeConfirmarPrazos(usuario)) {
+    return { sucesso: false, erro: MENSAGEM_APENAS_ADVOGADO };
+  }
   const prazo = await prisma.prazo.findUnique({ where: { id: parsed.data.prazoId } });
   if (!prazo) return { sucesso: false, erro: "prazo nao encontrado" };
   if (prazo.status !== "PENDENTE_CONFIRMACAO") {
@@ -136,6 +146,9 @@ export async function marcarPrazoComoCumprido(input: unknown): Promise<Resultado
   }
 
   const usuario = await obterUsuarioAtual();
+  if (!podeConfirmarPrazos(usuario)) {
+    return { sucesso: false, erro: MENSAGEM_APENAS_ADVOGADO };
+  }
   const prazo = await prisma.prazo.findUnique({ where: { id: parsed.data.prazoId } });
   if (!prazo) return { sucesso: false, erro: "prazo nao encontrado" };
   if (prazo.status !== "CONFIRMADO") {
