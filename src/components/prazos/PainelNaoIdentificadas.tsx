@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
+import Link from "next/link";
 import type { Publicacao } from "@prisma/client";
 import { vincularPublicacaoAProcesso } from "@/lib/prazos/acoes";
 import { formatarDataCalendario } from "@/lib/formatacao";
@@ -74,6 +75,12 @@ function ItemNaoIdentificada({
         {publicacao.fonte} · {formatarDataCalendario(publicacao.dataDisponibilizacao)}
       </p>
       <p className="mt-2 line-clamp-2 text-sm italic text-ink-soft">&ldquo;{publicacao.conteudo}&rdquo;</p>
+      <Link
+        href={`/publicacoes/${publicacao.id}`}
+        className="mt-1 inline-block text-xs text-ink-faint underline decoration-dotted transition-colors hover:text-brass"
+      >
+        Ver central da publicação
+      </Link>
 
       <div className="mt-4 flex flex-wrap items-center gap-2.5">
         <select

@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { gerarRascunhoPeticao } from "@/lib/ia/acoes";
+import { marcarPrazoComoCumprido } from "@/lib/prazos/acoes";
 import { formatarDataCalendario } from "@/lib/formatacao";
 import type { PrazoConfirmadoComRascunho } from "@/lib/prazos/fila";
 import { PainelTarefas, type UsuarioSelecionavel } from "./PainelTarefas";
@@ -38,7 +39,22 @@ function ItemConfirmado({ prazo, usuarios }: { prazo: PrazoConfirmadoComRascunho
   const [mostrar, setMostrar] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [copiado, setCopiado] = useState(false);
+  const [cumprido, setCumprido] = useState(false);
+  const [erroCumprir, setErroCumprir] = useState<string | null>(null);
   const [pendente, iniciarTransicao] = useTransition();
+  const [pendenteCumprir, iniciarTransicaoCumprir] = useTransition();
+
+  function cumprir() {
+    setErroCumprir(null);
+    iniciarTransicaoCumprir(async () => {
+      const resultado = await marcarPrazoComoCumprido({ prazoId: prazo.id });
+      if (!resultado.sucesso) {
+        setErroCumprir(resultado.erro);
+        return;
+      }
+      setCumprido(true);
+    });
+  }
 
   function gerar() {
     setErro(null);
@@ -59,6 +75,14 @@ function ItemConfirmado({ prazo, usuarios }: { prazo: PrazoConfirmadoComRascunho
     setTimeout(() => setCopiado(false), 2000);
   }
 
+  if (cumprido) {
+    return (
+      <div className="paper-card rounded-sm border-l-[3px] border-l-calm-line p-5 text-sm text-calm">
+        {prazo.processo.cliente} · {prazo.tipoAto} — marcado como cumprido.
+      </div>
+    );
+  }
+
   return (
     <div className="paper-card rounded-sm border-l-[3px] border-l-calm-line p-5">
       <p className="eyebrow">
@@ -77,6 +101,14 @@ function ItemConfirmado({ prazo, usuarios }: { prazo: PrazoConfirmadoComRascunho
         >
           {pendente ? "Gerando…" : rascunhoExistente ? "Gerar novo rascunho com IA" : "Gerar rascunho com IA"}
         </button>
+        <button
+          type="button"
+          disabled={pendenteCumprir}
+          onClick={cumprir}
+          className="rounded-sm border border-calm-line/40 px-4 py-1.5 text-sm font-medium text-calm transition-colors hover:bg-calm-bg disabled:opacity-50"
+        >
+          {pendenteCumprir ? "Marcando…" : "Marcar como cumprido"}
+        </button>
         {conteudo && (
           <button
             type="button"
@@ -89,6 +121,7 @@ function ItemConfirmado({ prazo, usuarios }: { prazo: PrazoConfirmadoComRascunho
       </div>
 
       {erro && <p className="mt-2 text-sm text-urgent">{erro}</p>}
+      {erroCumprir && <p className="mt-2 text-sm text-urgent">{erroCumprir}</p>}
 
       <div className={`expand ${mostrar && conteudo ? "is-open" : ""}`}>
         <div>

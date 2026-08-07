@@ -10,8 +10,10 @@ import {
   buscarPublicacoesVinculadasSemPrazo,
 } from "@/lib/prazos/fila";
 import { buscarPrazosParaDashboard } from "@/lib/prazos/dashboard";
+import { calcularRiscos, buscarAlertasFeriadosNaoRevisados } from "@/lib/prazos/risco";
 import { buscarUsuariosDoEscritorio } from "@/lib/usuarios/consultas";
 import { PainelDashboard } from "@/components/prazos/PainelDashboard";
+import { PainelRiscos } from "@/components/prazos/PainelRiscos";
 import { PainelPrazos } from "@/components/prazos/PainelPrazos";
 import { PainelNaoIdentificadas } from "@/components/prazos/PainelNaoIdentificadas";
 import { PainelConfirmados } from "@/components/prazos/PainelConfirmados";
@@ -53,6 +55,8 @@ export default async function Home() {
     usuarios,
     publicacoesSemPrazo,
     tiposAtoPrazo,
+    itensRisco,
+    alertasFeriados,
   ] = await Promise.all([
     buscarFilaPrazosPendentes(usuario.escritorioId),
     buscarPublicacoesNaoIdentificadas(),
@@ -63,6 +67,8 @@ export default async function Home() {
     buscarUsuariosDoEscritorio(usuario.escritorioId),
     buscarPublicacoesVinculadasSemPrazo(usuario.escritorioId),
     prisma.tipoAtoPrazo.findMany({ orderBy: { tipoAto: "asc" } }),
+    calcularRiscos(usuario.escritorioId),
+    buscarAlertasFeriadosNaoRevisados(usuario.escritorioId),
   ]);
   const usuariosSelecionaveis = usuarios.map((u) => ({ id: u.id, nome: u.nome }));
 
@@ -99,6 +105,18 @@ export default async function Home() {
             Feriados
           </Link>
           <Link
+            href="/agenda"
+            className="border-b border-transparent pb-0.5 text-ink-soft transition-colors hover:border-brass hover:text-ink"
+          >
+            Agenda
+          </Link>
+          <Link
+            href="/relatorios/seguranca"
+            className="border-b border-transparent pb-0.5 text-ink-soft transition-colors hover:border-brass hover:text-ink"
+          >
+            Relatório
+          </Link>
+          <Link
             href="/usuarios"
             className="border-b border-transparent pb-0.5 text-ink-soft transition-colors hover:border-brass hover:text-ink"
           >
@@ -120,6 +138,16 @@ export default async function Home() {
           </form>
         </nav>
       </header>
+
+      <section>
+        <div className="mb-6 flex items-baseline justify-between rule pt-6">
+          <h2 className="eyebrow pt-4">Riscos</h2>
+          <span className="font-display pt-4 text-2xl text-ink-faint">
+            {String(itensRisco.length + alertasFeriados.length).padStart(2, "0")}
+          </span>
+        </div>
+        <PainelRiscos itens={itensRisco} alertasFeriados={alertasFeriados} />
+      </section>
 
       <BotaoBuscarAgora oab={escritorio.oab.replace(/\D/g, "")} uf={escritorio.uf} />
 

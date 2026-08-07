@@ -108,6 +108,53 @@ export async function buscarPublicacoesVinculadasSemPrazo(escritorioId: string) 
 }
 export type PublicacaoVinculadaSemPrazo = Awaited<ReturnType<typeof buscarPublicacoesVinculadasSemPrazo>>[number];
 
+const publicacaoDetalhadaArgs = Prisma.validator<Prisma.PublicacaoDefaultArgs>()({
+  include: {
+    processo: true,
+    prazos: { include: { responsavel: true, confirmadoPor: true, tarefas: { orderBy: { criadoEm: "asc" } } } },
+  },
+});
+export type PublicacaoDetalhada = Prisma.PublicacaoGetPayload<typeof publicacaoDetalhadaArgs>;
+
+/** Publicação com processo, prazo(s) gerados e responsável — para a "central da publicação" (ver /publicacoes/[id]). */
+export async function buscarPublicacaoDetalhada(publicacaoId: string): Promise<PublicacaoDetalhada | null> {
+  return prisma.publicacao.findUnique({ where: { id: publicacaoId }, ...publicacaoDetalhadaArgs });
+}
+
+export interface EntradaHistorico {
+  id: string;
+  acao: string;
+  entidade: string;
+  usuarioNome: string;
+  criadoEm: Date;
+  valorAnterior: unknown;
+  valorNovo: unknown;
+}
+
+/** Histórico de auditoria de uma publicação e de qualquer prazo gerado a partir dela, mais recente primeiro. */
+export async function buscarHistoricoPublicacao(publicacaoId: string, prazoIds: string[]): Promise<EntradaHistorico[]> {
+  const logs = await prisma.logAuditoria.findMany({
+    where: {
+      OR: [
+        { entidade: "Publicacao", entidadeId: publicacaoId },
+        ...(prazoIds.length > 0 ? [{ entidade: "Prazo", entidadeId: { in: prazoIds } }] : []),
+      ],
+    },
+    include: { usuario: true },
+    orderBy: { criadoEm: "desc" },
+  });
+
+  return logs.map((log) => ({
+    id: log.id,
+    acao: log.acao,
+    entidade: log.entidade,
+    usuarioNome: log.usuario.nome,
+    criadoEm: log.criadoEm,
+    valorAnterior: log.valorAnterior,
+    valorNovo: log.valorNovo,
+  }));
+}
+
 /** Lista enxuta de processos do escritório, para o seletor de vínculo manual. */
 export async function buscarProcessosParaVinculacao(escritorioId: string) {
   return prisma.processo.findMany({

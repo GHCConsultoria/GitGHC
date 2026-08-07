@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import Link from "next/link";
 import { z } from "zod";
 import type { ItemFilaPrazo, NivelUrgencia } from "@/lib/prazos/fila";
 import { confirmarPrazo, descartarPrazo, editarDataFatalPrazo } from "@/lib/prazos/acoes";
@@ -90,6 +91,12 @@ function CartaoPrazo({ item, usuarios }: { item: ItemFilaPrazo; usuarios: Usuari
           <p className="mt-1 font-data text-xs tracking-wide text-ink-faint">
             {item.prazo.processo.numeroCnj} · {item.prazo.processo.tribunal}/{item.prazo.processo.uf}
           </p>
+          <Link
+            href={`/publicacoes/${item.prazo.publicacaoId}`}
+            className="mt-1.5 inline-block text-xs text-ink-faint underline decoration-dotted transition-colors hover:text-brass"
+          >
+            Ver central da publicação
+          </Link>
         </div>
         <div className="flex shrink-0 flex-col items-end gap-2">
           <span
