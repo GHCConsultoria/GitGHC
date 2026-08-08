@@ -128,6 +128,44 @@ export default async function PaginaPublicacao({ params }: { params: { id: strin
                   </ol>
                 )}
 
+                {prazo.status === "CUMPRIDO" && prazo.numeroProtocolo && (
+                  <div className="mt-4 border-t border-rule pt-4">
+                    <p className="eyebrow mb-2">Protocolo</p>
+                    <dl className="grid grid-cols-2 gap-x-6 gap-y-2 sm:grid-cols-3">
+                      <div>
+                        <dt className="eyebrow mb-1">Número</dt>
+                        <dd className="font-data text-sm">{prazo.numeroProtocolo}</dd>
+                      </div>
+                      <div>
+                        <dt className="eyebrow mb-1">Protocolado em</dt>
+                        <dd className="text-sm">
+                          {prazo.protocoladoEm ? formatarDataHora(prazo.protocoladoEm) : "—"}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt className="eyebrow mb-1">Comprovante</dt>
+                        <dd className="text-sm">
+                          {prazo.comprovanteUrl ? (
+                            <a
+                              href={prazo.comprovanteUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-brass underline decoration-dotted hover:text-brass-deep"
+                            >
+                              Ver comprovante
+                            </a>
+                          ) : (
+                            "—"
+                          )}
+                        </dd>
+                      </div>
+                    </dl>
+                    {prazo.observacaoProtocolo && (
+                      <p className="mt-2 text-sm text-ink-soft">{prazo.observacaoProtocolo}</p>
+                    )}
+                  </div>
+                )}
+
                 {prazo.tarefas.length > 0 && (
                   <div className="mt-4 border-t border-rule pt-4">
                     <p className="eyebrow mb-2">Tarefas</p>

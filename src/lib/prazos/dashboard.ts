@@ -13,6 +13,9 @@ export interface ItemDashboardPrazo {
   prazo: PrazoDashboard;
   bucket: BucketDashboard;
   diasCorridosRestantes: number;
+  // Já passou da data fatal e ainda está ativo — mais grave que "vence hoje",
+  // que cai no mesmo bucket (HOJE) por não sumir da vista.
+  vencido: boolean;
 }
 
 const MS_POR_DIA = 24 * 60 * 60 * 1000;
@@ -50,7 +53,7 @@ export async function buscarPrazosParaDashboard(escritorioId: string): Promise<I
   for (const prazo of prazos) {
     const diasCorridosRestantes = Math.round((prazo.dataFatal.getTime() - hoje.getTime()) / MS_POR_DIA);
     const bucket = classificarBucket(diasCorridosRestantes);
-    if (bucket) itens.push({ prazo, bucket, diasCorridosRestantes });
+    if (bucket) itens.push({ prazo, bucket, diasCorridosRestantes, vencido: diasCorridosRestantes < 0 });
   }
   return itens;
 }

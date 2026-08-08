@@ -73,6 +73,12 @@ export default async function Home() {
   ]);
   const usuariosSelecionaveis = usuarios.map((u) => ({ id: u.id, nome: u.nome }));
   const podeConfirmar = podeConfirmarPrazos(usuario);
+  // Sinal de risco (Nível 2 — "modo paranoia jurídica") sobreposto direto nos
+  // cards do dashboard e da fila, pra não depender só da seção separada de
+  // Riscos pra alguém perceber que um prazo perto do vencimento também está
+  // sem tarefa, sem confirmação ou sem ninguém ter visto o alerta. Array (não
+  // Set) porque isto atravessa a fronteira server -> client component.
+  const riscoPrazoIds = itensRisco.map((item) => item.prazoId);
 
   return (
     <>
@@ -163,7 +169,7 @@ export default async function Home() {
             {String(itensDashboard.length).padStart(2, "0")}
           </span>
         </div>
-        <PainelDashboard itens={itensDashboard} usuarios={usuariosSelecionaveis} />
+        <PainelDashboard itens={itensDashboard} usuarios={usuariosSelecionaveis} riscoPrazoIds={riscoPrazoIds} />
       </section>
 
       <section>
@@ -173,7 +179,12 @@ export default async function Home() {
             {String(itensFila.length).padStart(2, "0")}
           </span>
         </div>
-        <PainelPrazos itens={itensFila} usuarios={usuariosSelecionaveis} podeConfirmar={podeConfirmar} />
+        <PainelPrazos
+          itens={itensFila}
+          usuarios={usuariosSelecionaveis}
+          podeConfirmar={podeConfirmar}
+          riscoPrazoIds={riscoPrazoIds}
+        />
       </section>
 
       <section>

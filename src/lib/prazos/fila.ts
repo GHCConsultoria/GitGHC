@@ -1,6 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { paraDataCalendarioSaoPaulo } from "./calculo";
+import { verificarPrazo, type ResultadoVerificacaoPrazo } from "./verificacao";
 
 const prazoComRelacoesArgs = Prisma.validator<Prisma.PrazoDefaultArgs>()({
   include: {
@@ -12,12 +13,16 @@ const prazoComRelacoesArgs = Prisma.validator<Prisma.PrazoDefaultArgs>()({
 });
 export type PrazoComRelacoes = Prisma.PrazoGetPayload<typeof prazoComRelacoesArgs>;
 
-export type NivelUrgencia = "VERMELHO" | "AMARELO" | "VERDE";
+// CRITICO (vence hoje ou já venceu) é o único nível que anda sozinho — os
+// outros três (Urgente/Atenção/Normal) mapeiam a leitura de "🟠🟡🟢" que o
+// escritório já usa informalmente.
+export type NivelUrgencia = "CRITICO" | "VERMELHO" | "AMARELO" | "VERDE";
 
 export interface ItemFilaPrazo {
   prazo: PrazoComRelacoes;
   urgencia: NivelUrgencia;
   diasUteisRestantes: number;
+  verificacao: ResultadoVerificacaoPrazo;
 }
 
 /**
@@ -42,13 +47,19 @@ export function contarDiasUteisAte(hoje: Date, dataFatal: Date): number {
   return contagem;
 }
 
-function classificarUrgencia(diasUteisRestantes: number): NivelUrgencia {
+export function classificarUrgencia(diasUteisRestantes: number): NivelUrgencia {
+  if (diasUteisRestantes <= 0) return "CRITICO";
   if (diasUteisRestantes <= 2) return "VERMELHO";
   if (diasUteisRestantes <= 5) return "AMARELO";
   return "VERDE";
 }
 
-/** Fila principal: prazos aguardando confirmação humana, mais urgente primeiro. */
+/**
+ * Fila principal: prazos aguardando confirmação humana, mais urgente
+ * primeiro. Cada item já vem com a conferência automática (ver
+ * verificacao.ts) — reexecuta o motor de cálculo com os dados originais e
+ * sinaliza se o resultado salvo ainda bate com o que o motor produziria hoje.
+ */
 export async function buscarFilaPrazosPendentes(escritorioId: string): Promise<ItemFilaPrazo[]> {
   const prazos = await prisma.prazo.findMany({
     where: { status: "PENDENTE_CONFIRMACAO", processo: { escritorioId } },
@@ -58,10 +69,13 @@ export async function buscarFilaPrazosPendentes(escritorioId: string): Promise<I
 
   const hoje = paraDataCalendarioSaoPaulo(new Date());
 
-  return prazos.map((prazo) => {
-    const diasUteisRestantes = contarDiasUteisAte(hoje, prazo.dataFatal);
-    return { prazo, urgencia: classificarUrgencia(diasUteisRestantes), diasUteisRestantes };
-  });
+  return Promise.all(
+    prazos.map(async (prazo) => {
+      const diasUteisRestantes = contarDiasUteisAte(hoje, prazo.dataFatal);
+      const verificacao = await verificarPrazo(prazo, prazo.publicacao, prazo.processo);
+      return { prazo, urgencia: classificarUrgencia(diasUteisRestantes), diasUteisRestantes, verificacao };
+    }),
+  );
 }
 
 /** Fila de publicações que a ingestão não conseguiu vincular a nenhum processo. */

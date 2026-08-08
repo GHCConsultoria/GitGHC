@@ -56,6 +56,7 @@ model Usuario {
 
   prazosConfirmados Prazo[]         @relation("PrazoConfirmadoPor")
   prazosResponsavel Prazo[]         @relation("PrazoResponsavel")
+  prazosProtocolados Prazo[]        @relation("PrazoProtocoladoPor")
   processosResponsavel Processo[]   @relation("ProcessoResponsavel")
   tarefasResponsavel TarefaPrazo[]  @relation("TarefaResponsavel")
   tarefasConcluidas  TarefaPrazo[]  @relation("TarefaConcluidaPor")
@@ -189,6 +190,17 @@ model Prazo {
   // clicado (ver src/lib/prazos/token-visto.ts) — não é confirmação, só
   // sinaliza que alguém olhou o alerta.
   visualizadoEm DateTime?
+
+  // Evidência de protocolo — preenchida obrigatoriamente ao marcar o prazo
+  // como CUMPRIDO (ver marcarPrazoComoCumprido em src/lib/prazos/acoes.ts).
+  // O ciclo publicação → prazo → confirmação → cumprimento só se fecha com
+  // prova de que o ato foi de fato praticado, não só uma alegação.
+  numeroProtocolo   String?
+  protocoladoEm     DateTime?
+  comprovanteUrl    String?
+  observacaoProtocolo String?
+  protocoladoPor    Usuario? @relation("PrazoProtocoladoPor", fields: [protocoladoPorId], references: [id])
+  protocoladoPorId  String?
 
   alertasEnviados AlertaPrazoEnviado[]
   rascunhosPeticao RascunhoPeticao[]

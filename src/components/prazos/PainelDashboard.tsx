@@ -27,8 +27,17 @@ const PONTO_BUCKET: Record<BucketDashboard, string> = {
 const ORDEM_BUCKETS: BucketDashboard[] = ["HOJE", "PROXIMOS_3_DIAS", "PROXIMOS_7_DIAS"];
 
 /** Dashboard de controle de prazos: agrupa por urgência (hoje/3d/7d), com contador regressivo e filtro por responsável. */
-export function PainelDashboard({ itens, usuarios }: { itens: ItemDashboardPrazo[]; usuarios: UsuarioSelecionavel[] }) {
+export function PainelDashboard({
+  itens,
+  usuarios,
+  riscoPrazoIds,
+}: {
+  itens: ItemDashboardPrazo[];
+  usuarios: UsuarioSelecionavel[];
+  riscoPrazoIds: string[];
+}) {
   const [filtroResponsavelId, setFiltroResponsavelId] = useState("");
+  const riscoIds = useMemo(() => new Set(riscoPrazoIds), [riscoPrazoIds]);
 
   const itensFiltrados = useMemo(() => {
     if (!filtroResponsavelId) return itens;
@@ -78,7 +87,7 @@ export function PainelDashboard({ itens, usuarios }: { itens: ItemDashboardPrazo
               )}
               {porBucket[bucket].map((item) => (
                 <li key={item.prazo.id}>
-                  <CartaoDashboard item={item} />
+                  <CartaoDashboard item={item} emRisco={riscoIds.has(item.prazo.id)} />
                 </li>
               ))}
             </ul>
@@ -89,20 +98,32 @@ export function PainelDashboard({ itens, usuarios }: { itens: ItemDashboardPrazo
   );
 }
 
-function CartaoDashboard({ item }: { item: ItemDashboardPrazo }) {
-  const { prazo, bucket, diasCorridosRestantes } = item;
+function CartaoDashboard({ item, emRisco }: { item: ItemDashboardPrazo; emRisco: boolean }) {
+  const { prazo, bucket, diasCorridosRestantes, vencido } = item;
 
   return (
     <Link
       href={`/publicacoes/${prazo.publicacaoId}`}
       className={`paper-card paper-card-interactive block rounded-sm border-l-[3px] p-3.5 ${COR_BUCKET[bucket]}`}
     >
-      <p className="truncate text-sm font-medium text-ink">{prazo.processo.cliente}</p>
+      <div className="flex items-start justify-between gap-2">
+        <p className="truncate text-sm font-medium text-ink">{prazo.processo.cliente}</p>
+        {emRisco && (
+          <span
+            title="Este prazo também está sinalizado no painel de Riscos"
+            className="shrink-0 rounded-full border border-ink-faint/40 px-1.5 py-0.5 text-[0.65rem] leading-none text-ink-faint"
+          >
+            ⚫ risco
+          </span>
+        )}
+      </div>
       <p className="mt-0.5 truncate font-data text-xs text-ink-faint">{prazo.processo.numeroCnj}</p>
       <p className="mt-1.5 text-xs text-ink-soft">{prazo.tipoAto}</p>
       <div className="mt-2.5 flex items-center justify-between gap-2 border-t border-rule pt-2.5">
         <span className="font-data text-xs text-ink">{formatarDataCalendario(prazo.dataFatal)}</span>
-        {bucket === "HOJE" ? (
+        {vencido ? (
+          <span className="font-data text-xs font-medium text-urgent">vencido</span>
+        ) : bucket === "HOJE" ? (
           <ContadorRegressivo dataFatal={prazo.dataFatal} />
         ) : (
           <span className="font-data text-xs text-ink-faint">

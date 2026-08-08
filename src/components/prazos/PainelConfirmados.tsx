@@ -50,14 +50,20 @@ function ItemConfirmado({
   const [erro, setErro] = useState<string | null>(null);
   const [copiado, setCopiado] = useState(false);
   const [cumprido, setCumprido] = useState(false);
+  const [mostrarFormCumprir, setMostrarFormCumprir] = useState(false);
   const [erroCumprir, setErroCumprir] = useState<string | null>(null);
   const [pendente, iniciarTransicao] = useTransition();
   const [pendenteCumprir, iniciarTransicaoCumprir] = useTransition();
 
-  function cumprir() {
+  function cumprir(numeroProtocolo: string, comprovanteUrl: string, observacaoProtocolo: string) {
     setErroCumprir(null);
     iniciarTransicaoCumprir(async () => {
-      const resultado = await marcarPrazoComoCumprido({ prazoId: prazo.id });
+      const resultado = await marcarPrazoComoCumprido({
+        prazoId: prazo.id,
+        numeroProtocolo,
+        comprovanteUrl,
+        observacaoProtocolo,
+      });
       if (!resultado.sucesso) {
         setErroCumprir(resultado.erro);
         return;
@@ -111,14 +117,14 @@ function ItemConfirmado({
         >
           {pendente ? "Gerando…" : rascunhoExistente ? "Gerar novo rascunho com IA" : "Gerar rascunho com IA"}
         </button>
-        {podeConfirmar && (
+        {podeConfirmar && !mostrarFormCumprir && (
           <button
             type="button"
             disabled={pendenteCumprir}
-            onClick={cumprir}
+            onClick={() => setMostrarFormCumprir(true)}
             className="rounded-sm border border-calm-line/40 px-4 py-1.5 text-sm font-medium text-calm transition-colors hover:bg-calm-bg disabled:opacity-50"
           >
-            {pendenteCumprir ? "Marcando…" : "Marcar como cumprido"}
+            Marcar como cumprido
           </button>
         )}
         {conteudo && (
@@ -133,7 +139,18 @@ function ItemConfirmado({
       </div>
 
       {erro && <p className="mt-2 text-sm text-urgent">{erro}</p>}
-      {erroCumprir && <p className="mt-2 text-sm text-urgent">{erroCumprir}</p>}
+
+      {mostrarFormCumprir && (
+        <FormularioProtocolo
+          pendente={pendenteCumprir}
+          erro={erroCumprir}
+          onCancelar={() => {
+            setMostrarFormCumprir(false);
+            setErroCumprir(null);
+          }}
+          onConfirmar={cumprir}
+        />
+      )}
 
       <div className={`expand ${mostrar && conteudo ? "is-open" : ""}`}>
         <div>
@@ -169,5 +186,86 @@ function ItemConfirmado({
         usuarios={usuarios}
       />
     </div>
+  );
+}
+
+/**
+ * "Controle de protocolo": o ciclo publicação → prazo → confirmação só fecha
+ * com evidência de que o ato foi de fato praticado — número de protocolo é
+ * obrigatório, comprovante (link) e observação são opcionais.
+ */
+function FormularioProtocolo({
+  pendente,
+  erro,
+  onCancelar,
+  onConfirmar,
+}: {
+  pendente: boolean;
+  erro: string | null;
+  onCancelar: () => void;
+  onConfirmar: (numeroProtocolo: string, comprovanteUrl: string, observacaoProtocolo: string) => void;
+}) {
+  const [numeroProtocolo, setNumeroProtocolo] = useState("");
+  const [comprovanteUrl, setComprovanteUrl] = useState("");
+  const [observacaoProtocolo, setObservacaoProtocolo] = useState("");
+
+  return (
+    <form
+      className="mt-4 flex flex-col gap-3 rounded-sm border border-calm-line/30 bg-calm-bg/40 p-4"
+      onSubmit={(evento) => {
+        evento.preventDefault();
+        onConfirmar(numeroProtocolo, comprovanteUrl, observacaoProtocolo);
+      }}
+    >
+      <p className="text-xs text-ink-soft">
+        Registre a evidência de que o ato foi protocolado — é isso que fecha o ciclo com prova, não só uma alegação.
+      </p>
+      <label className="text-sm">
+        <span className="eyebrow mb-1.5 block">Número do protocolo (obrigatório)</span>
+        <input
+          type="text"
+          value={numeroProtocolo}
+          onChange={(evento) => setNumeroProtocolo(evento.target.value)}
+          className="w-full rounded-sm border border-rule bg-paper-raised px-3 py-1.5 text-sm outline-none focus:border-brass"
+          required
+        />
+      </label>
+      <label className="text-sm">
+        <span className="eyebrow mb-1.5 block">Link do comprovante (opcional)</span>
+        <input
+          type="url"
+          value={comprovanteUrl}
+          onChange={(evento) => setComprovanteUrl(evento.target.value)}
+          placeholder="https://..."
+          className="w-full rounded-sm border border-rule bg-paper-raised px-3 py-1.5 text-sm outline-none focus:border-brass"
+        />
+      </label>
+      <label className="text-sm">
+        <span className="eyebrow mb-1.5 block">Observação (opcional)</span>
+        <textarea
+          value={observacaoProtocolo}
+          onChange={(evento) => setObservacaoProtocolo(evento.target.value)}
+          rows={2}
+          className="w-full rounded-sm border border-rule bg-paper-raised px-3 py-2 text-sm outline-none focus:border-brass"
+        />
+      </label>
+      {erro && <p className="text-sm text-urgent">{erro}</p>}
+      <div className="flex gap-2.5">
+        <button
+          type="submit"
+          disabled={pendente}
+          className="rounded-sm bg-calm px-4 py-2 text-sm font-medium text-paper-raised transition-opacity hover:opacity-90 disabled:opacity-50"
+        >
+          {pendente ? "Marcando…" : "Confirmar cumprimento"}
+        </button>
+        <button
+          type="button"
+          onClick={onCancelar}
+          className="rounded-sm border border-rule px-4 py-2 text-sm text-ink-soft hover:text-ink"
+        >
+          Cancelar
+        </button>
+      </div>
+    </form>
   );
 }

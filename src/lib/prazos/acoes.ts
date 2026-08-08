@@ -136,9 +136,29 @@ export async function descartarPrazo(input: unknown): Promise<ResultadoAcao> {
   return { sucesso: true };
 }
 
-const marcarComoCumpridoSchema = z.object({ prazoId: z.string().min(1) });
+const marcarComoCumpridoSchema = z.object({
+  prazoId: z.string().min(1),
+  numeroProtocolo: z.string().trim().min(1, "numero de protocolo e obrigatorio"),
+  comprovanteUrl: z
+    .string()
+    .trim()
+    .url("comprovante deve ser um link valido")
+    .optional()
+    .or(z.literal("").transform(() => undefined)),
+  observacaoProtocolo: z
+    .string()
+    .trim()
+    .optional()
+    .or(z.literal("").transform(() => undefined)),
+});
 
-/** Marca um prazo CONFIRMADO como CUMPRIDO — o ato foi de fato praticado. Auditado. */
+/**
+ * Marca um prazo CONFIRMADO como CUMPRIDO — o ato foi de fato praticado.
+ * Exige número de protocolo como evidência mínima (comprovante e observação
+ * são opcionais): "sistema propõe, humano confirma" também vale pro
+ * cumprimento — ninguém fecha o ciclo só clicando num botão, precisa provar
+ * que protocolou. Auditado.
+ */
 export async function marcarPrazoComoCumprido(input: unknown): Promise<ResultadoAcao> {
   const parsed = marcarComoCumpridoSchema.safeParse(input);
   if (!parsed.success) {
@@ -155,8 +175,17 @@ export async function marcarPrazoComoCumprido(input: unknown): Promise<Resultado
     return { sucesso: false, erro: `prazo nao esta confirmado (status atual: ${prazo.status})` };
   }
 
+  const agora = new Date();
+  const dadosProtocolo = {
+    numeroProtocolo: parsed.data.numeroProtocolo,
+    comprovanteUrl: parsed.data.comprovanteUrl ?? null,
+    observacaoProtocolo: parsed.data.observacaoProtocolo ?? null,
+    protocoladoPorId: usuario.id,
+    protocoladoEm: agora,
+  };
+
   await prisma.$transaction([
-    prisma.prazo.update({ where: { id: prazo.id }, data: { status: "CUMPRIDO" } }),
+    prisma.prazo.update({ where: { id: prazo.id }, data: { status: "CUMPRIDO", ...dadosProtocolo } }),
     prisma.logAuditoria.create({
       data: {
         usuarioId: usuario.id,
@@ -164,7 +193,13 @@ export async function marcarPrazoComoCumprido(input: unknown): Promise<Resultado
         entidadeId: prazo.id,
         acao: "MARCAR_CUMPRIDO",
         valorAnterior: { status: prazo.status },
-        valorNovo: { status: "CUMPRIDO" },
+        valorNovo: {
+          status: "CUMPRIDO",
+          numeroProtocolo: dadosProtocolo.numeroProtocolo,
+          comprovanteUrl: dadosProtocolo.comprovanteUrl,
+          protocoladoPorId: usuario.id,
+          protocoladoEm: agora.toISOString(),
+        },
       },
     }),
   ]);

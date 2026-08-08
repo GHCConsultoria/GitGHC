@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import Link from "next/link";
 import { z } from "zod";
 import type { ItemFilaPrazo, NivelUrgencia } from "@/lib/prazos/fila";
+import type { ResultadoVerificacaoPrazo } from "@/lib/prazos/verificacao";
 import { confirmarPrazo, descartarPrazo, editarDataFatalPrazo } from "@/lib/prazos/acoes";
 import { atribuirResponsavelPrazo } from "@/lib/prazos/tarefas";
 import { formatarDataCalendario } from "@/lib/formatacao";
@@ -19,18 +20,21 @@ function extrairPassos(detalhesCalculo: unknown): Array<z.infer<typeof passoSche
 }
 
 const ACENTO_URGENCIA: Record<NivelUrgencia, string> = {
+  CRITICO: "border-l-urgent-line",
   VERMELHO: "border-l-urgent-line",
   AMARELO: "border-l-attention-line",
   VERDE: "border-l-calm-line",
 };
 
 const SELO_URGENCIA: Record<NivelUrgencia, string> = {
+  CRITICO: "bg-urgent text-paper-raised border-urgent",
   VERMELHO: "bg-urgent-bg text-urgent border-urgent-line/40",
   AMARELO: "bg-attention-bg text-attention border-attention-line/40",
   VERDE: "bg-calm-bg text-calm border-calm-line/40",
 };
 
 const ROTULO_URGENCIA: Record<NivelUrgencia, string> = {
+  CRITICO: "Crítico",
   VERMELHO: "Urgente",
   AMARELO: "Atenção",
   VERDE: "Tranquilo",
@@ -41,10 +45,12 @@ export function PainelPrazos({
   itens,
   usuarios,
   podeConfirmar,
+  riscoPrazoIds,
 }: {
   itens: ItemFilaPrazo[];
   usuarios: UsuarioSelecionavel[];
   podeConfirmar: boolean;
+  riscoPrazoIds: string[];
 }) {
   if (itens.length === 0) {
     return (
@@ -54,11 +60,13 @@ export function PainelPrazos({
     );
   }
 
+  const riscoIds = new Set(riscoPrazoIds);
+
   return (
     <ul className="flex flex-col gap-5">
       {itens.map((item, indice) => (
         <li key={item.prazo.id} className="stagger-in" style={{ "--stagger-index": indice } as React.CSSProperties}>
-          <CartaoPrazo item={item} usuarios={usuarios} podeConfirmar={podeConfirmar} />
+          <CartaoPrazo item={item} usuarios={usuarios} podeConfirmar={podeConfirmar} emRisco={riscoIds.has(item.prazo.id)} />
         </li>
       ))}
     </ul>
@@ -69,10 +77,12 @@ function CartaoPrazo({
   item,
   usuarios,
   podeConfirmar,
+  emRisco,
 }: {
   item: ItemFilaPrazo;
   usuarios: UsuarioSelecionavel[];
   podeConfirmar: boolean;
+  emRisco: boolean;
 }) {
   const { prazo, urgencia, diasUteisRestantes } = item;
   const [mostrarPassos, setMostrarPassos] = useState(false);
@@ -116,12 +126,22 @@ function CartaoPrazo({
           </Link>
         </div>
         <div className="flex shrink-0 flex-col items-end gap-2">
-          <span
-            className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border px-3 py-1 text-xs font-medium ${SELO_URGENCIA[urgencia]}`}
-          >
-            <span className="h-1.5 w-1.5 rounded-full bg-current" />
-            {ROTULO_URGENCIA[urgencia]} · {diasUteisRestantes}d úteis
-          </span>
+          <div className="flex items-center gap-1.5">
+            {emRisco && (
+              <span
+                title="Este prazo também está sinalizado no painel de Riscos"
+                className="rounded-full border border-ink-faint/40 px-2 py-1 text-[0.65rem] leading-none text-ink-faint"
+              >
+                ⚫ risco
+              </span>
+            )}
+            <span
+              className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border px-3 py-1 text-xs font-medium ${SELO_URGENCIA[urgencia]}`}
+            >
+              <span className="h-1.5 w-1.5 rounded-full bg-current" />
+              {ROTULO_URGENCIA[urgencia]} · {diasUteisRestantes}d úteis
+            </span>
+          </div>
           <select
             value={responsavelId}
             disabled={pendenteResponsavel}
@@ -167,6 +187,8 @@ function CartaoPrazo({
           <dd className="font-display text-lg leading-none text-brass">{formatarDataCalendario(prazo.dataFatal)}</dd>
         </div>
       </dl>
+
+      <ConferenciaAutomatica verificacao={item.verificacao} />
 
       {passos.length > 0 && (
         <div className="mt-4">
@@ -282,6 +304,31 @@ function CartaoPrazo({
       />
     </article>
   );
+}
+
+/**
+ * "Dupla checagem" leve (ver src/lib/prazos/verificacao.ts): reexecuta o
+ * motor de cálculo com os dados originais do prazo e mostra se o valor
+ * salvo ainda bate. Sempre visível — ninguém deveria precisar clicar em
+ * nada pra saber se a data que está prestes a confirmar foi conferida de
+ * novo ou não.
+ */
+function ConferenciaAutomatica({ verificacao }: { verificacao: ResultadoVerificacaoPrazo }) {
+  if (verificacao.status === "CONFERIDO") {
+    return (
+      <p className="mt-3 text-xs text-calm">✓ Recalculado e conferido — sem divergência em relação ao valor salvo.</p>
+    );
+  }
+  if (verificacao.status === "DIVERGENTE") {
+    return (
+      <p className="mt-3 text-xs text-urgent">
+        ⚠ Recálculo diverge do valor salvo — {verificacao.motivo}. Data recalculada:{" "}
+        <span className="font-data">{formatarDataCalendario(verificacao.dataFatalRecalculada)}</span>. Revise antes
+        de confirmar.
+      </p>
+    );
+  }
+  return <p className="mt-3 text-xs text-ink-faint">Conferência automática indisponível — {verificacao.motivo}.</p>;
 }
 
 function FormularioEditarData({
