@@ -26,10 +26,11 @@ export function PainelRiscos({
 
   return (
     <div className="flex flex-col gap-3">
-      {alertasFeriados.map((alerta) => (
+      {alertasFeriados.map((alerta, indice) => (
         <div
           key={`${alerta.uf}-${alerta.ano}`}
-          className="rounded-sm border border-urgent-line/40 bg-urgent-bg px-4 py-3 text-sm text-urgent"
+          className="stagger-in rounded-sm border border-urgent-line/40 bg-urgent-bg px-4 py-3 text-sm text-urgent"
+          style={{ "--stagger-index": indice } as React.CSSProperties}
         >
           Calendário de feriados de <strong>{alerta.uf}/{alerta.ano}</strong> ainda não foi revisado. Prazos desta
           UF podem ficar em revisão manual em vez de calculados. Revisão obrigatória em{" "}
@@ -40,8 +41,12 @@ export function PainelRiscos({
         </div>
       ))}
 
-      {itens.map((item) => (
-        <article key={item.prazoId} className="paper-card rounded-sm border-l-[3px] border-l-urgent-line p-4">
+      {itens.map((item, indice) => (
+        <article
+          key={item.prazoId}
+          className="stagger-in paper-card rounded-sm border-l-[3px] border-l-urgent-line p-4"
+          style={{ "--stagger-index": alertasFeriados.length + indice } as React.CSSProperties}
+        >
           <div className="flex flex-wrap items-start justify-between gap-2">
             <div>
               <p className="text-sm font-medium text-ink">

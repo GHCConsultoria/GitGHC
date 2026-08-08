@@ -29,8 +29,8 @@ export function PainelSemClassificacao({
 
   return (
     <ul className="flex flex-col gap-4">
-      {publicacoes.map((publicacao) => (
-        <li key={publicacao.id}>
+      {publicacoes.map((publicacao, indice) => (
+        <li key={publicacao.id} className="stagger-in" style={{ "--stagger-index": indice } as React.CSSProperties}>
           <CartaoSemClassificacao publicacao={publicacao} tiposDisponiveis={tiposDisponiveis} />
         </li>
       ))}

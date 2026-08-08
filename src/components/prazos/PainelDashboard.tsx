@@ -85,8 +85,8 @@ export function PainelDashboard({
               {porBucket[bucket].length === 0 && (
                 <li className="paper-card rounded-sm px-3 py-4 text-center text-xs text-ink-faint">Nada aqui.</li>
               )}
-              {porBucket[bucket].map((item) => (
-                <li key={item.prazo.id}>
+              {porBucket[bucket].map((item, indice) => (
+                <li key={item.prazo.id} className="stagger-in" style={{ "--stagger-index": indice } as React.CSSProperties}>
                   <CartaoDashboard item={item} emRisco={riscoIds.has(item.prazo.id)} />
                 </li>
               ))}

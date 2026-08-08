@@ -37,8 +37,7 @@
   --shadow-card-hover: 0 2px 4px rgba(0, 0, 0, 0.45), 0 20px 56px -18px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.05);
   --shadow-focus: 0 0 0 3px color-mix(in srgb, var(--color-brass) 35%, transparent);
 
-  --grid-line: rgba(255, 255, 255, 0.035);
-  --scanline: rgba(255, 255, 255, 0.018);
+  --glow-brass: rgba(34, 211, 238, 0.08);
 
   /* Curvas fortes o bastante pra parecer intencional — as padrão do browser
      são fracas demais e a interface fica com "peso" errado. */
@@ -86,8 +85,7 @@
     --shadow-card-hover: 0 2px 4px rgba(16, 18, 21, 0.06), 0 14px 32px -12px rgba(16, 18, 21, 0.18);
     --shadow-focus: 0 0 0 3px color-mix(in srgb, var(--color-brass) 30%, transparent);
 
-    --grid-line: rgba(16, 18, 21, 0.045);
-    --scanline: rgba(16, 18, 21, 0.02);
+    --glow-brass: rgba(8, 145, 178, 0.06);
   }
 }
 
@@ -124,8 +122,7 @@
   --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.4), 0 12px 40px -16px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.03);
   --shadow-card-hover: 0 2px 4px rgba(0, 0, 0, 0.45), 0 20px 56px -18px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.05);
   --shadow-focus: 0 0 0 3px color-mix(in srgb, var(--color-brass) 35%, transparent);
-  --grid-line: rgba(255, 255, 255, 0.035);
-  --scanline: rgba(255, 255, 255, 0.018);
+  --glow-brass: rgba(34, 211, 238, 0.08);
 }
 
 :root[data-theme="light"] {
@@ -153,8 +150,7 @@
   --shadow-card: 0 1px 2px rgba(16, 18, 21, 0.04), 0 8px 24px -12px rgba(16, 18, 21, 0.12);
   --shadow-card-hover: 0 2px 4px rgba(16, 18, 21, 0.06), 0 14px 32px -12px rgba(16, 18, 21, 0.18);
   --shadow-focus: 0 0 0 3px color-mix(in srgb, var(--color-brass) 30%, transparent);
-  --grid-line: rgba(16, 18, 21, 0.045);
-  --scanline: rgba(16, 18, 21, 0.02);
+  --glow-brass: rgba(8, 145, 178, 0.06);
 }
 
 * {
@@ -173,24 +169,38 @@ body {
   min-height: 100vh;
 }
 
-/* Grade + scanlines sutis — sensação de painel de controle/radar, não tela lisa. */
+/* Glow suave no topo — profundidade sem ficar "quadriculado" (a grade +
+   scanlines anteriores lembravam painel técnico, não editorial premium). */
 body::before {
   content: "";
   position: fixed;
   inset: 0;
   z-index: 0;
   pointer-events: none;
-  background-image:
-    repeating-linear-gradient(0deg, var(--scanline) 0px, var(--scanline) 1px, transparent 1px, transparent 3px),
-    linear-gradient(var(--grid-line) 1px, transparent 1px),
-    linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
-  background-size: 100% 3px, 56px 56px, 56px 56px;
+  background-image: radial-gradient(ellipse 70% 45% at 50% -8%, var(--glow-brass), transparent 65%);
 }
 
 #__next,
 body > div {
   position: relative;
   z-index: 1;
+}
+
+/*
+ * Toda página entra com um fade + leve subida ao montar — sem precisar de
+ * classe nem JS em cada page.tsx: @starting-style define o estado "antes" e
+ * o browser anima até o estado normal sozinho, na primeira renderização de
+ * qualquer <main>. Navegador sem suporte (Chrome <117/Safari <17.5/Firefox
+ * <129) só ignora a regra e a página aparece direto, sem quebrar nada.
+ */
+main {
+  transition: opacity 560ms var(--ease-out), transform 560ms var(--ease-out);
+}
+@starting-style {
+  main {
+    opacity: 0;
+    transform: translateY(10px);
+  }
 }
 
 ::selection {
@@ -236,6 +246,15 @@ button:not(:disabled):active {
   }
   button:not(:disabled):active {
     transform: none;
+  }
+  main {
+    transition: none;
+  }
+  @starting-style {
+    main {
+      opacity: 1;
+      transform: none;
+    }
   }
 }
 

@@ -139,7 +139,7 @@ export default async function Home() {
       </nav>
 
       <main className="mx-auto flex min-h-screen max-w-5xl flex-col gap-14 px-6 py-10 sm:px-10 sm:py-14">
-        <header>
+        <header className="stagger-in" style={{ "--stagger-index": 0 } as React.CSSProperties}>
           <p className="eyebrow mb-3">GitGHC · Conferência de prazos</p>
           <h1 className="font-display text-4xl leading-none tracking-tight sm:text-5xl">
             Publicações <span className="italic text-ink-soft">&amp;</span> prazos
@@ -150,7 +150,7 @@ export default async function Home() {
           </p>
         </header>
 
-        <section>
+        <section className="stagger-in" style={{ "--stagger-index": 1 } as React.CSSProperties}>
         <div className="mb-6 flex items-baseline justify-between rule pt-6">
           <h2 className="eyebrow pt-4">Riscos</h2>
           <span className="font-display pt-4 text-2xl text-ink-faint">
@@ -162,7 +162,7 @@ export default async function Home() {
 
       <BotaoBuscarAgora oab={escritorio.oab.replace(/\D/g, "")} uf={escritorio.uf} />
 
-      <section>
+      <section className="stagger-in" style={{ "--stagger-index": 2 } as React.CSSProperties}>
         <div className="mb-6 flex items-baseline justify-between rule pt-6">
           <h2 className="eyebrow pt-4">Painel de controle</h2>
           <span className="font-display pt-4 text-2xl text-ink-faint">
@@ -172,7 +172,7 @@ export default async function Home() {
         <PainelDashboard itens={itensDashboard} usuarios={usuariosSelecionaveis} riscoPrazoIds={riscoPrazoIds} />
       </section>
 
-      <section>
+      <section className="stagger-in" style={{ "--stagger-index": 3 } as React.CSSProperties}>
         <div className="mb-6 flex items-baseline justify-between rule pt-6">
           <h2 className="eyebrow pt-4">Aguardando confirmação</h2>
           <span className="font-display pt-4 text-2xl text-ink-faint">
@@ -187,7 +187,7 @@ export default async function Home() {
         />
       </section>
 
-      <section>
+      <section className="stagger-in" style={{ "--stagger-index": 4 } as React.CSSProperties}>
         <div className="mb-3 flex items-baseline justify-between rule pt-6">
           <h2 className="eyebrow pt-4">Não identificadas</h2>
           <span className="font-display pt-4 text-2xl text-ink-faint">
@@ -201,7 +201,7 @@ export default async function Home() {
         <PainelNaoIdentificadas publicacoes={publicacoesNaoIdentificadas} processos={processos} />
       </section>
 
-      <section>
+      <section className="stagger-in" style={{ "--stagger-index": 5 } as React.CSSProperties}>
         <div className="mb-3 flex items-baseline justify-between rule pt-6">
           <h2 className="eyebrow pt-4">Sem tipo de ato identificado</h2>
           <span className="font-display pt-4 text-2xl text-ink-faint">
@@ -215,7 +215,7 @@ export default async function Home() {
         <PainelSemClassificacao publicacoes={publicacoesSemPrazo} tiposDisponiveis={tiposAtoPrazo} />
       </section>
 
-      <section>
+      <section className="stagger-in" style={{ "--stagger-index": 6 } as React.CSSProperties}>
         <div className="mb-3 flex items-baseline justify-between rule pt-6">
           <h2 className="eyebrow pt-4">Confirmados</h2>
           <span className="font-display pt-4 text-2xl text-ink-faint">
