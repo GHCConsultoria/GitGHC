@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { obterUsuarioAtual, UsuarioNaoAutenticadoError, UsuarioNaoCadastradoError } from "@/lib/auth";
@@ -21,9 +20,21 @@ import { PainelNaoIdentificadas } from "@/components/prazos/PainelNaoIdentificad
 import { PainelConfirmados } from "@/components/prazos/PainelConfirmados";
 import { PainelSemClassificacao } from "@/components/prazos/PainelSemClassificacao";
 import { BotaoBuscarAgora } from "@/components/publicacoes/BotaoBuscarAgora";
+import { NavPrincipal, type ItemNav } from "@/components/layout/NavPrincipal";
 import { sair } from "@/app/login/actions";
 
 export const dynamic = "force-dynamic";
+
+const ITENS_NAV: ItemNav[] = [
+  { href: "/escritorio", rotulo: "Escritório" },
+  { href: "/processos", rotulo: "Processos" },
+  { href: "/feriados", rotulo: "Feriados" },
+  { href: "/agenda", rotulo: "Agenda" },
+  { href: "/modelos", rotulo: "Modelos" },
+  { href: "/relatorios/seguranca", rotulo: "Relatório" },
+  { href: "/usuarios", rotulo: "Usuários" },
+  { href: "/saude", rotulo: "Painel de saúde" },
+];
 
 export default async function Home() {
   let usuario;
@@ -85,67 +96,7 @@ export default async function Home() {
 
   return (
     <>
-      <nav className="sticky top-0 z-20 border-b border-rule bg-paper/85 backdrop-blur-md">
-        <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-x-5 gap-y-2 px-6 py-3 text-sm sm:px-10">
-          <span className="eyebrow mr-2 shrink-0 text-ink">GitGHC</span>
-          <Link
-            href="/escritorio"
-            className="border-b border-transparent pb-0.5 text-ink-soft transition-colors hover:border-brass hover:text-ink"
-          >
-            Escritório
-          </Link>
-          <Link
-            href="/processos"
-            className="border-b border-transparent pb-0.5 text-ink-soft transition-colors hover:border-brass hover:text-ink"
-          >
-            Processos
-          </Link>
-          <Link
-            href="/feriados"
-            className="border-b border-transparent pb-0.5 text-ink-soft transition-colors hover:border-brass hover:text-ink"
-          >
-            Feriados
-          </Link>
-          <Link
-            href="/agenda"
-            className="border-b border-transparent pb-0.5 text-ink-soft transition-colors hover:border-brass hover:text-ink"
-          >
-            Agenda
-          </Link>
-          <Link
-            href="/modelos"
-            className="border-b border-transparent pb-0.5 text-ink-soft transition-colors hover:border-brass hover:text-ink"
-          >
-            Modelos
-          </Link>
-          <Link
-            href="/relatorios/seguranca"
-            className="border-b border-transparent pb-0.5 text-ink-soft transition-colors hover:border-brass hover:text-ink"
-          >
-            Relatório
-          </Link>
-          <Link
-            href="/usuarios"
-            className="border-b border-transparent pb-0.5 text-ink-soft transition-colors hover:border-brass hover:text-ink"
-          >
-            Usuários
-          </Link>
-          <Link
-            href="/saude"
-            className="border-b border-transparent pb-0.5 text-ink-soft transition-colors hover:border-brass hover:text-ink"
-          >
-            Painel de saúde
-          </Link>
-          <form action={sair} className="ml-auto">
-            <button
-              type="submit"
-              className="border-b border-transparent pb-0.5 text-ink-soft transition-colors hover:border-brass hover:text-ink"
-            >
-              Sair
-            </button>
-          </form>
-        </div>
-      </nav>
+      <NavPrincipal itens={ITENS_NAV} acaoSair={sair} />
 
       <main className="mx-auto flex min-h-screen max-w-5xl flex-col gap-14 px-6 py-10 sm:px-10 sm:py-14">
         <header className="stagger-in" style={{ "--stagger-index": 0 } as React.CSSProperties}>
