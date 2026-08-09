@@ -30,7 +30,14 @@ export const metadata: Metadata = {
   },
 };
 
+// userScalable: false trava o pinch-to-zoom -- deliberado para a sensação
+// de "app instalado" (PWA) em vez de página web comum; a UI já cuida de
+// não depender de zoom pra ser legível (tamanhos de fonte generosos).
 export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
   themeColor: "#0a0b0d",
 };
 
