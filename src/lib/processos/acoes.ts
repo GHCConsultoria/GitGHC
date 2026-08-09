@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma";
 import { obterUsuarioAtual } from "@/lib/auth";
 import { normalizarNumeroCnj } from "@/lib/publicacoes/cnj";
 import { UFS_BRASIL } from "@/lib/br/ufs";
+import { parseCsvProcessos } from "@/lib/processos/importacao";
 
 export type ResultadoAcao = { sucesso: true } | { sucesso: false; erro: string };
 
@@ -141,4 +142,73 @@ export async function atribuirResponsavelProcesso(input: unknown): Promise<Resul
 
   revalidatePath("/processos");
   return { sucesso: true };
+}
+
+export interface ResultadoLinhaImportacao {
+  linha: number;
+  status: "criado" | "duplicado" | "invalida";
+  numeroCnj?: string;
+  erro?: string;
+}
+
+export type ResultadoImportacaoCsv =
+  | { sucesso: true; resultados: ResultadoLinhaImportacao[]; totalCriados: number }
+  | { sucesso: false; erro: string };
+
+/**
+ * Importa processos em lote a partir de um CSV (ver template em
+ * src/lib/processos/importacao.ts). Cada linha é tratada de forma
+ * independente — uma linha inválida ou duplicada não aborta as demais,
+ * porque o objetivo é migrar uma carteira inteira de processos de uma vez
+ * só, e travar tudo por causa de uma linha ruim obrigaria reenviar o
+ * arquivo inteiro. Duplicado (mesmo numeroCnj já cadastrado neste
+ * escritório) não é erro — só é pulado.
+ */
+export async function importarProcessosCsv(csvText: string): Promise<ResultadoImportacaoCsv> {
+  const usuario = await obterUsuarioAtual();
+
+  const parseado = parseCsvProcessos(csvText);
+  if (parseado.status === "cabecalho_invalido") {
+    return { sucesso: false, erro: parseado.erro };
+  }
+
+  const resultados: ResultadoLinhaImportacao[] = [];
+  let totalCriados = 0;
+
+  for (const linha of parseado.linhas) {
+    if (linha.status === "invalida") {
+      resultados.push({ linha: linha.linha, status: "invalida", erro: linha.erro });
+      continue;
+    }
+
+    try {
+      await prisma.$transaction(async (tx) => {
+        const processo = await tx.processo.create({
+          data: { escritorioId: usuario.escritorioId, ...linha.dados },
+        });
+        await tx.logAuditoria.create({
+          data: {
+            usuarioId: usuario.id,
+            entidade: "Processo",
+            entidadeId: processo.id,
+            acao: "IMPORTAR_CSV",
+            valorAnterior: Prisma.JsonNull,
+            valorNovo: { numeroCnj: processo.numeroCnj, cliente: processo.cliente },
+          },
+        });
+      });
+      resultados.push({ linha: linha.linha, status: "criado", numeroCnj: linha.dados.numeroCnj });
+      totalCriados += 1;
+    } catch (erro) {
+      if (erro instanceof Prisma.PrismaClientKnownRequestError && erro.code === "P2002") {
+        resultados.push({ linha: linha.linha, status: "duplicado", numeroCnj: linha.dados.numeroCnj });
+        continue;
+      }
+      throw erro;
+    }
+  }
+
+  revalidatePath("/processos");
+  revalidatePath("/");
+  return { sucesso: true, resultados, totalCriados };
 }

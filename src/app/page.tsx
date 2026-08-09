@@ -12,6 +12,7 @@ import {
 import { buscarPrazosParaDashboard } from "@/lib/prazos/dashboard";
 import { calcularRiscos, buscarAlertasFeriadosNaoRevisados } from "@/lib/prazos/risco";
 import { buscarUsuariosDoEscritorio } from "@/lib/usuarios/consultas";
+import { buscarModelosDoEscritorio } from "@/lib/modelos/consultas";
 import { podeConfirmarPrazos } from "@/lib/permissoes";
 import { PainelDashboard } from "@/components/prazos/PainelDashboard";
 import { PainelRiscos } from "@/components/prazos/PainelRiscos";
@@ -58,6 +59,7 @@ export default async function Home() {
     tiposAtoPrazo,
     itensRisco,
     alertasFeriados,
+    modelos,
   ] = await Promise.all([
     buscarFilaPrazosPendentes(usuario.escritorioId),
     buscarPublicacoesNaoIdentificadas(),
@@ -70,6 +72,7 @@ export default async function Home() {
     prisma.tipoAtoPrazo.findMany({ orderBy: { tipoAto: "asc" } }),
     calcularRiscos(usuario.escritorioId),
     buscarAlertasFeriadosNaoRevisados(usuario.escritorioId),
+    buscarModelosDoEscritorio(usuario.escritorioId),
   ]);
   const usuariosSelecionaveis = usuarios.map((u) => ({ id: u.id, nome: u.nome }));
   const podeConfirmar = podeConfirmarPrazos(usuario);
@@ -108,6 +111,12 @@ export default async function Home() {
             className="border-b border-transparent pb-0.5 text-ink-soft transition-colors hover:border-brass hover:text-ink"
           >
             Agenda
+          </Link>
+          <Link
+            href="/modelos"
+            className="border-b border-transparent pb-0.5 text-ink-soft transition-colors hover:border-brass hover:text-ink"
+          >
+            Modelos
           </Link>
           <Link
             href="/relatorios/seguranca"
@@ -226,7 +235,12 @@ export default async function Home() {
           Rascunho inicial de petição via IA, a partir do prazo confirmado — sempre um ponto de partida pra revisão,
           nunca protocolado automaticamente.
         </p>
-        <PainelConfirmados prazos={prazosConfirmados} usuarios={usuariosSelecionaveis} podeConfirmar={podeConfirmar} />
+        <PainelConfirmados
+          prazos={prazosConfirmados}
+          usuarios={usuariosSelecionaveis}
+          podeConfirmar={podeConfirmar}
+          modelos={modelos}
+        />
         </section>
       </main>
     </>

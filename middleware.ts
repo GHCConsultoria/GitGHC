@@ -3,6 +3,7 @@ import { NextResponse, type NextRequest } from "next/server";
 
 const ROTA_LOGIN = "/login";
 const ROTA_LOGIN_NUTRI = "/nutri/login";
+const ROTA_CADASTRO = "/cadastro";
 
 /**
  * Renova a sessão do Supabase a cada navegação e redireciona para o login
@@ -11,11 +12,13 @@ const ROTA_LOGIN_NUTRI = "/nutri/login";
  * (Usuario vs Nutricionista — ver src/lib/auth.ts e src/lib/nutri/auth.ts):
  * /nutri/** manda pra /nutri/login, o resto manda pra /login. /p/[token] é
  * o link do paciente — sem senha nenhuma, o token na própria URL é a
- * credencial — então fica fora do gate de sessão inteiramente. Rotas de
- * API ficam fora do matcher abaixo (têm seu próprio esquema de auth —
- * CRON_SECRET no cron, o token no corpo em /api/nutri/registros —
- * redirecionar uma chamada de API para uma página HTML de login não faz
- * sentido).
+ * credencial — então fica fora do gate de sessão inteiramente. /cadastro é
+ * o cadastro público de escritório (ver src/lib/cadastro/acoes.ts) — fica
+ * de fora do gate pelo mesmo motivo que /login: quem chega ali ainda não
+ * tem sessão nenhuma. Rotas de API ficam fora do matcher abaixo (têm seu
+ * próprio esquema de auth — CRON_SECRET no cron, o token no corpo em
+ * /api/nutri/registros — redirecionar uma chamada de API para uma página
+ * HTML de login não faz sentido).
  */
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({ request });
@@ -56,8 +59,9 @@ export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   const ehAreaNutri = pathname.startsWith("/nutri");
   const ehRotaDeLogin = ehAreaNutri ? pathname.startsWith(ROTA_LOGIN_NUTRI) : pathname.startsWith(ROTA_LOGIN);
+  const ehRotaDeCadastro = !ehAreaNutri && pathname.startsWith(ROTA_CADASTRO);
 
-  if (!user && !ehRotaDeLogin) {
+  if (!user && !ehRotaDeLogin && !ehRotaDeCadastro) {
     const destino = request.nextUrl.clone();
     destino.pathname = ehAreaNutri ? ROTA_LOGIN_NUTRI : ROTA_LOGIN;
     return NextResponse.redirect(destino);

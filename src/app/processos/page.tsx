@@ -48,6 +48,12 @@ export default async function Processos() {
           A ingestão do DJEN só vincula uma publicação automaticamente a um processo que já esteja cadastrado aqui,
           pelo número CNJ.
         </p>
+        <Link
+          href="/processos/importar"
+          className="mt-3 inline-block text-sm text-brass underline decoration-dotted hover:text-brass-deep"
+        >
+          Importar vários processos de uma vez (CSV)
+        </Link>
       </header>
 
       <section>

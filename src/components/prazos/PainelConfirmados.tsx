@@ -1,8 +1,10 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
+import type { ModeloPeticao } from "@prisma/client";
 import { gerarRascunhoPeticao } from "@/lib/ia/acoes";
 import { marcarPrazoComoCumprido } from "@/lib/prazos/acoes";
+import { preencherModeloParaPrazo } from "@/lib/modelos/acoes";
 import { formatarDataCalendario } from "@/lib/formatacao";
 import type { PrazoConfirmadoComRascunho } from "@/lib/prazos/fila";
 import { PainelTarefas, type UsuarioSelecionavel } from "./PainelTarefas";
@@ -11,10 +13,12 @@ export function PainelConfirmados({
   prazos,
   usuarios,
   podeConfirmar,
+  modelos,
 }: {
   prazos: PrazoConfirmadoComRascunho[];
   usuarios: UsuarioSelecionavel[];
   podeConfirmar: boolean;
+  modelos: ModeloPeticao[];
 }) {
   if (prazos.length === 0) {
     return (
@@ -28,7 +32,7 @@ export function PainelConfirmados({
     <ul className="flex flex-col gap-3">
       {prazos.map((prazo, indice) => (
         <li key={prazo.id} className="stagger-in" style={{ "--stagger-index": indice } as React.CSSProperties}>
-          <ItemConfirmado prazo={prazo} usuarios={usuarios} podeConfirmar={podeConfirmar} />
+          <ItemConfirmado prazo={prazo} usuarios={usuarios} podeConfirmar={podeConfirmar} modelos={modelos} />
         </li>
       ))}
     </ul>
@@ -39,21 +43,31 @@ function ItemConfirmado({
   prazo,
   usuarios,
   podeConfirmar,
+  modelos,
 }: {
   prazo: PrazoConfirmadoComRascunho;
   usuarios: UsuarioSelecionavel[];
   podeConfirmar: boolean;
+  modelos: ModeloPeticao[];
 }) {
   const rascunhoExistente = prazo.rascunhosPeticao[0];
   const [conteudo, setConteudo] = useState(rascunhoExistente?.conteudo ?? "");
+  const [origemConteudo, setOrigemConteudo] = useState<"ia" | "modelo" | null>(rascunhoExistente ? "ia" : null);
   const [mostrar, setMostrar] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [copiado, setCopiado] = useState(false);
   const [cumprido, setCumprido] = useState(false);
   const [mostrarFormCumprir, setMostrarFormCumprir] = useState(false);
   const [erroCumprir, setErroCumprir] = useState<string | null>(null);
+  const [modeloSelecionadoId, setModeloSelecionadoId] = useState("");
   const [pendente, iniciarTransicao] = useTransition();
   const [pendenteCumprir, iniciarTransicaoCumprir] = useTransition();
+  const [pendenteModelo, iniciarTransicaoModelo] = useTransition();
+
+  const modelosAplicaveis = useMemo(
+    () => modelos.filter((modelo) => modelo.tipoAto === null || modelo.tipoAto === prazo.tipoAto),
+    [modelos, prazo.tipoAto],
+  );
 
   function cumprir(numeroProtocolo: string, comprovanteUrl: string, observacaoProtocolo: string) {
     setErroCumprir(null);
@@ -81,6 +95,22 @@ function ItemConfirmado({
         return;
       }
       setConteudo(resultado.conteudo);
+      setOrigemConteudo("ia");
+      setMostrar(true);
+    });
+  }
+
+  function usarModelo() {
+    if (!modeloSelecionadoId) return;
+    setErro(null);
+    iniciarTransicaoModelo(async () => {
+      const resultado = await preencherModeloParaPrazo({ prazoId: prazo.id, modeloId: modeloSelecionadoId });
+      if (!resultado.sucesso) {
+        setErro(resultado.erro);
+        return;
+      }
+      setConteudo(resultado.conteudo);
+      setOrigemConteudo("modelo");
       setMostrar(true);
     });
   }
@@ -117,6 +147,30 @@ function ItemConfirmado({
         >
           {pendente ? "Gerando…" : rascunhoExistente ? "Gerar novo rascunho com IA" : "Gerar rascunho com IA"}
         </button>
+        {modelosAplicaveis.length > 0 && (
+          <div className="flex items-center gap-1.5">
+            <select
+              value={modeloSelecionadoId}
+              onChange={(evento) => setModeloSelecionadoId(evento.target.value)}
+              className="rounded-sm border border-rule bg-paper-raised px-2 py-1.5 text-xs text-ink-soft outline-none focus:border-brass"
+            >
+              <option value="">Escolha um modelo…</option>
+              {modelosAplicaveis.map((modelo) => (
+                <option key={modelo.id} value={modelo.id}>
+                  {modelo.titulo}
+                </option>
+              ))}
+            </select>
+            <button
+              type="button"
+              disabled={pendenteModelo || !modeloSelecionadoId}
+              onClick={usarModelo}
+              className="rounded-sm border border-brass/40 px-3 py-1.5 text-xs font-medium text-brass transition-colors hover:bg-brass/10 disabled:opacity-50"
+            >
+              {pendenteModelo ? "Preenchendo…" : "Usar modelo"}
+            </button>
+          </div>
+        )}
         {podeConfirmar && !mostrarFormCumprir && (
           <button
             type="button"
@@ -156,7 +210,10 @@ function ItemConfirmado({
         <div>
           <div className="mt-4 border-t border-rule pt-4">
             <p className="mb-2 text-xs text-urgent">
-              Rascunho gerado por IA — revise com atenção antes de usar. Nunca protocole ou envie sem revisão humana.
+              {origemConteudo === "modelo"
+                ? "Rascunho a partir de um modelo do escritório — confira os campos [A PREENCHER: ...] antes de usar."
+                : "Rascunho gerado por IA — revise com atenção antes de usar."}{" "}
+              Nunca protocole ou envie sem revisão humana.
             </p>
             <textarea
               value={conteudo}

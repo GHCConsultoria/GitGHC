@@ -28,6 +28,7 @@ model Escritorio {
 
   usuarios   Usuario[]
   processos  Processo[]
+  modelosPeticao ModeloPeticao[]
 
   criadoEm  DateTime @default(now())
   atualizadoEm DateTime @updatedAt
@@ -54,6 +55,7 @@ model Usuario {
   escritorio   Escritorio  @relation(fields: [escritorioId], references: [id])
   escritorioId String
 
+  modelosPeticaoCriados ModeloPeticao[] @relation("ModeloPeticaoCriadoPor")
   prazosConfirmados Prazo[]         @relation("PrazoConfirmadoPor")
   prazosResponsavel Prazo[]         @relation("PrazoResponsavel")
   prazosProtocolados Prazo[]        @relation("PrazoProtocoladoPor")
@@ -310,6 +312,34 @@ model TipoAtoPrazo {
   atualizadoEm DateTime @updatedAt
 
   @@map("tipos_ato_prazo")
+}
+
+// ---------------------------------------------------------------------------
+// Modelos de petição (templates editáveis)
+// ---------------------------------------------------------------------------
+
+// Template reutilizável de peça processual, mantido pelo próprio escritório.
+// Placeholders no conteúdo (ex.: {{cliente}}, {{numeroCnj}}) são preenchidos
+// com os dados do prazo na hora de usar (ver src/lib/modelos/preenchimento.ts)
+// — puro texto/substituição de string, sem IA envolvida, então o resultado é
+// sempre previsível. tipoAto null = modelo genérico, aparece como opção pra
+// qualquer prazo, não só um tipo específico.
+model ModeloPeticao {
+  id       String  @id @default(cuid())
+  titulo   String
+  tipoAto  String?
+  conteudo String
+
+  escritorio   Escritorio @relation(fields: [escritorioId], references: [id])
+  escritorioId String
+
+  criadoPor   Usuario @relation("ModeloPeticaoCriadoPor", fields: [criadoPorId], references: [id])
+  criadoPorId String
+
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  @@map("modelos_peticao")
 }
 
 // Controle de revisão do calendário forense por UF/ano. Existe para

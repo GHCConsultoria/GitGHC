@@ -1,6 +1,7 @@
 "use client";
 
 import { useFormState, useFormStatus } from "react-dom";
+import Link from "next/link";
 import { entrar, type EstadoLogin } from "./actions";
 
 const ESTADO_INICIAL: EstadoLogin = {};
@@ -60,7 +61,11 @@ export default function Login() {
           </form>
 
           <p className="mt-8 text-xs text-ink-faint">
-            Não tem conta? Peça para o administrador do seu escritório te cadastrar.
+            Não tem conta?{" "}
+            <Link href="/cadastro" className="underline decoration-dotted hover:text-brass">
+              Cadastre seu escritório
+            </Link>
+            , ou peça para o administrador te adicionar a um já existente.
           </p>
         </div>
       </section>
