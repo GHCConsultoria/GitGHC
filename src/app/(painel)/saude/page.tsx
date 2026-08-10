@@ -25,6 +25,13 @@ export default async function Saude() {
         </p>
       </header>
 
+      <p className="paper-card rounded-sm border-l-4 border-l-brass p-4 text-sm text-ink-soft">
+        O cron diário roda no servidor, e o DJEN bloqueia consultas vindas de infraestrutura de nuvem — então ele
+        sempre aparece como &ldquo;Falhou&rdquo; abaixo, mesmo em dia normal. Isso é esperado. A ingestão de verdade
+        acontece pelo card &ldquo;Ingestão&rdquo; no painel principal, que roda direto do navegador de quem está
+        logado (sem esse bloqueio) e dispara sozinho ao abrir a página.
+      </p>
+
       <section className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         <Metrica rotulo="Não identificadas (atual)" valor={publicacoesNaoIdentificadas} />
         <Metrica rotulo="Prazos pendentes (atual)" valor={prazosPendentes} />

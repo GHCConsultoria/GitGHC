@@ -87,6 +87,14 @@ export const PERGUNTAS_AJUDA: PerguntaAjuda[] = [
     palavrasChave: ["não identificada", "vincular", "sem processo"],
   },
   {
+    id: "cron-falhou",
+    categoria: "Processos",
+    pergunta: "Por que o Painel de saúde mostra o cron diário como \"Falhou\"?",
+    resposta:
+      "É esperado, não é um problema. O cron roda no servidor, e o DJEN bloqueia consultas vindas de infraestrutura de nuvem. A ingestão de verdade acontece pelo card \"Ingestão\" no painel principal, que roda direto do navegador de quem está logado (sem esse bloqueio) e dispara sozinho ao abrir a página, no máximo a cada 6 horas.",
+    palavrasChave: ["cron", "falhou", "403", "painel de saúde", "djen bloqueado"],
+  },
+  {
     id: "novo-escritorio",
     categoria: "Conta",
     pergunta: "Como cadastro um escritório novo?",
