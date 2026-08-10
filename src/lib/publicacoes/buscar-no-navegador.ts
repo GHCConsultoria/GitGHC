@@ -1,5 +1,9 @@
 import type { BuscarPublicacoesParams, PublicacaoBruta } from "./provider";
-import { DJEN_ITENS_POR_PAGINA, interpretarRespostaDjen, montarUrlBuscaDjen } from "./djen-provider";
+import { DJEN_ITENS_POR_PAGINA, DJEN_MAX_PAGINAS, interpretarRespostaDjen, montarUrlBuscaDjen } from "./djen-provider";
+
+// Se o DJEN não responder nesse tempo, desiste em vez de deixar o botão
+// "Verificando..." travado pra sempre.
+const TIMEOUT_POR_PAGINA_MS = 20_000;
 
 /**
  * Busca publicações no DJEN diretamente do navegador de quem está usando o
@@ -17,9 +21,24 @@ export async function buscarPublicacoesNoNavegador(params: BuscarPublicacoesPara
   let pagina = 1;
 
   for (;;) {
+    if (pagina > DJEN_MAX_PAGINAS) {
+      throw new Error(`DJEN não terminou a paginação após ${DJEN_MAX_PAGINAS} páginas — parando por segurança.`);
+    }
     const url = montarUrlBuscaDjen(params, pagina);
 
-    const resposta = await fetch(url, { headers: { Accept: "application/json" } });
+    const controlador = new AbortController();
+    const timeoutId = setTimeout(() => controlador.abort(), TIMEOUT_POR_PAGINA_MS);
+    let resposta: Response;
+    try {
+      resposta = await fetch(url, { headers: { Accept: "application/json" }, signal: controlador.signal });
+    } catch (erro) {
+      if (erro instanceof Error && erro.name === "AbortError") {
+        throw new Error(`DJEN não respondeu em ${TIMEOUT_POR_PAGINA_MS / 1000}s na página ${pagina}.`);
+      }
+      throw erro;
+    } finally {
+      clearTimeout(timeoutId);
+    }
     if (!resposta.ok) {
       const corpoErro = await resposta.text().catch(() => "");
       throw new Error(

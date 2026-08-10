@@ -4,6 +4,12 @@ import type { BuscarPublicacoesParams, PublicacaoBruta, PublicacaoProvider } fro
 export const DJEN_BASE_URL = "https://comunicaapi.pje.jus.br/api/v1/comunicacao";
 export const DJEN_ITENS_POR_PAGINA = 100;
 
+// Trava de segurança: se o DJEN devolver sempre uma página cheia (ex.: ignorar
+// o parâmetro de página, ou um volume real gigantesco), o loop de paginação
+// para aqui em vez de rodar pra sempre. 50 páginas de 100 já é 5 mil
+// publicações numa janela de poucos dias — bem acima de qualquer caso real.
+export const DJEN_MAX_PAGINAS = 50;
+
 // O contrato de resposta da API pública do DJEN (Comunica PJe) não é coberto
 // por um versionamento formal estável. O schema abaixo é deliberadamente
 // tolerante — campos opcionais, `.passthrough()` — e o item bruto inteiro é
@@ -88,6 +94,9 @@ export class DjenProvider implements PublicacaoProvider {
     let pagina = 1;
 
     for (;;) {
+      if (pagina > DJEN_MAX_PAGINAS) {
+        throw new Error(`DJEN não terminou a paginação após ${DJEN_MAX_PAGINAS} páginas — parando por segurança.`);
+      }
       const url = montarUrlBuscaDjen(params, pagina);
 
       const resposta = await fetch(url, {
