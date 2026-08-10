@@ -10,6 +10,13 @@ export function PainelIntegracaoCalendario({ urlFeedInicial }: { urlFeedInicial:
   const [erro, setErro] = useState<string | null>(null);
   const [pendente, iniciarTransicao] = useTransition();
 
+  // webcal:// é o esquema que Apple Calendar e Outlook reconhecem nativamente
+  // pra assinar direto, num clique só, em vez de baixar o arquivo uma vez.
+  // O truque do "cid" é o jeito documentado do próprio Google de abrir o
+  // Google Calendar já pronto pra assinar uma URL externa.
+  const urlWebcal = urlFeed.replace(/^https?:\/\//, "webcal://");
+  const urlGoogleCalendar = `https://calendar.google.com/calendar/render?cid=${encodeURIComponent(urlWebcal)}`;
+
   async function copiar() {
     await navigator.clipboard.writeText(urlFeed);
     setCopiado(true);
@@ -38,6 +45,23 @@ export function PainelIntegracaoCalendario({ urlFeedInicial }: { urlFeedInicial:
       </p>
 
       <div className="flex flex-wrap items-center gap-2.5">
+        <a
+          href={urlGoogleCalendar}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex shrink-0 items-center gap-2 rounded-sm bg-brass px-4 py-2 text-sm font-medium text-brass-on shadow-sm transition-colors hover:bg-brass-deep"
+        >
+          Adicionar ao Google Calendar
+        </a>
+        <a
+          href={urlWebcal}
+          className="inline-flex shrink-0 items-center gap-2 rounded-sm border border-rule px-4 py-2 text-sm font-medium text-ink transition-colors hover:border-brass"
+        >
+          Adicionar no Apple Calendar / Outlook
+        </a>
+      </div>
+
+      <div className="mt-3 flex flex-wrap items-center gap-2.5">
         <input
           type="text"
           readOnly
@@ -48,24 +72,15 @@ export function PainelIntegracaoCalendario({ urlFeedInicial }: { urlFeedInicial:
         <button
           type="button"
           onClick={copiar}
-          className="shrink-0 rounded-sm bg-brass px-4 py-2 text-sm font-medium text-brass-on shadow-sm transition-colors hover:bg-brass-deep"
+          className="shrink-0 rounded-sm border border-rule px-3 py-2 text-xs font-medium text-ink-soft transition-colors hover:border-brass hover:text-ink"
         >
-          {copiado ? "Copiado!" : "Copiar link"}
+          {copiado ? "Copiado!" : "Copiar link manualmente"}
         </button>
       </div>
-
-      <details className="mt-4 text-sm text-ink-soft">
-        <summary className="cursor-pointer text-ink-faint">Como adicionar</summary>
-        <ul className="mt-2 list-disc space-y-1 pl-5">
-          <li>
-            <strong className="text-ink">Google Calendar:</strong> Outros calendários → <span aria-hidden>+</span> →
-            &ldquo;A partir do URL&rdquo; → cole o link.
-          </li>
-          <li>
-            <strong className="text-ink">Outlook:</strong> Adicionar calendário → Assinar da web → cole o link.
-          </li>
-        </ul>
-      </details>
+      <p className="mt-2 text-xs text-ink-faint">
+        Os botões acima já abrem o app de calendário pronto pra assinar. Use o link manual só se algum deles não
+        funcionar no seu navegador.
+      </p>
 
       <div className="mt-5 border-t border-rule pt-4">
         {!confirmandoRegeneracao ? (
