@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { obterUsuarioAtual, UsuarioNaoAutenticadoError, UsuarioNaoCadastradoError } from "@/lib/auth";
 import { SidebarPrincipal } from "@/components/layout/SidebarPrincipal";
+import { ChatAjuda } from "@/components/layout/ChatAjuda";
 import { sair } from "@/app/login/actions";
 
 export const dynamic = "force-dynamic";
@@ -38,6 +39,7 @@ export default async function PainelLayout({ children }: { children: React.React
     <>
       <SidebarPrincipal usuario={{ nome: usuario.nome, role: usuario.role }} acaoSair={sair} />
       <div className="lg:pl-60">{children}</div>
+      <ChatAjuda />
     </>
   );
 }
