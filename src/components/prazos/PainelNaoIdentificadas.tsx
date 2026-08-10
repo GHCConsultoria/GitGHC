@@ -98,7 +98,7 @@ function ItemNaoIdentificada({
           <option value="">Selecione o processo…</option>
           {processos.map((processo) => (
             <option key={processo.id} value={processo.id}>
-              {processo.cliente} — {processo.numeroCnj} ({processo.varaOrgao})
+              {processo.cliente} · {processo.numeroCnj} ({processo.varaOrgao})
             </option>
           ))}
         </select>
@@ -134,7 +134,7 @@ function ItemNaoIdentificada({
           <div className="mt-4 border-t border-rule pt-4">
             {temSugestao && (
               <p className="mb-3 text-xs text-ink-faint">
-                Campos abaixo foram sugeridos a partir do texto da publicação — confira antes de salvar.
+                Campos abaixo foram sugeridos a partir do texto da publicação. Confira antes de salvar.
               </p>
             )}
             <FormularioNovoProcesso

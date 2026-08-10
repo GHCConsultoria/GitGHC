@@ -33,9 +33,9 @@ function montarLinhaHistorico(dados: DadosParaRascunho): string[] {
     return ["Histórico do processo: nenhum outro prazo confirmado registrado antes deste."];
   }
   return [
-    "Histórico de atos anteriores já confirmados neste mesmo processo (mais recente primeiro — use só como contexto do andamento do caso, nunca como fato a repetir sem necessidade):",
+    "Histórico de atos anteriores já confirmados neste mesmo processo (mais recente primeiro; use só como contexto do andamento do caso, nunca como fato a repetir sem necessidade):",
     ...dados.historicoProcesso.map(
-      (ato) => `- ${ato.tipoAto}, data fatal ${formatarDataIso(ato.dataFatal)} (${ato.status})`,
+      (ato) => `- ${ato.tipoAto}, data final ${formatarDataIso(ato.dataFatal)} (${ato.status})`,
     ),
   ];
 }
@@ -43,13 +43,13 @@ function montarLinhaHistorico(dados: DadosParaRascunho): string[] {
 export function montarPromptRascunho(dados: DadosParaRascunho): string {
   return [
     "Você é um assistente jurídico auxiliando um advogado brasileiro a preparar um RASCUNHO inicial de peça processual.",
-    "Este texto é só um ponto de partida — o advogado vai revisar, corrigir e adaptar tudo antes de protocolar qualquer coisa. Nunca é enviado ou protocolado automaticamente.",
+    "Este texto é só um ponto de partida. O advogado vai revisar, corrigir e adaptar tudo antes de protocolar qualquer coisa; nunca é enviado ou protocolado automaticamente.",
     "Nunca invente fatos, valores, jurisprudência, dispositivos legais ou datas que não estejam nos dados abaixo. Quando faltar informação necessária, escreva [A PREENCHER: o que falta] em vez de supor.",
     "",
     "Dados do processo:",
     `- Cliente representado: ${dados.cliente} (${dados.parteRepresentada})`,
     `- Processo: ${dados.numeroCnj}`,
-    `- Vara/órgão: ${dados.varaOrgao} — ${dados.tribunal}/${dados.uf}`,
+    `- Vara/órgão: ${dados.varaOrgao} (${dados.tribunal}/${dados.uf})`,
     `- Ato processual a responder: ${dados.tipoAto}`,
     `- Descrição do prazo: ${dados.descricao}`,
     "",

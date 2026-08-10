@@ -97,7 +97,7 @@ export function PainelAgendaSemana({
       <p className="mt-3 text-xs text-ink-faint">
         {podeReagendar
           ? "Arraste um prazo ainda não confirmado para outro dia pra reagendar (pede justificativa). Prazos confirmados/cumpridos são só leitura aqui."
-          : "Só advogados podem reagendar prazos — esta agenda está em modo leitura pro seu papel."}
+          : "Só advogados podem reagendar prazos. Esta agenda está em modo leitura pro seu papel."}
       </p>
 
       {pendente && (

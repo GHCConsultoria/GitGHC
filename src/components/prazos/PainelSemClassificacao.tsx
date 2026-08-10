@@ -133,7 +133,7 @@ function CartaoSemClassificacao({
                 Sugestão: <span className="font-medium text-ink">{sugestao.tipoAtoSugerido}</span>
               </>
             ) : (
-              <span className="text-ink-soft">Sem sugestão segura — classifique manualmente.</span>
+              <span className="text-ink-soft">Sem sugestão segura. Classifique manualmente.</span>
             )}
           </p>
           <p className="mt-1 text-xs text-ink-faint">{sugestao.justificativa}</p>
@@ -148,7 +148,7 @@ function CartaoSemClassificacao({
               {tiposDisponiveis.map((tipo) => (
                 <option key={tipo.tipoAto} value={tipo.tipoAto}>
                   {tipo.tipoAto}
-                  {tipo.descricao ? ` — ${tipo.descricao}` : ""}
+                  {tipo.descricao ? ` (${tipo.descricao})` : ""}
                 </option>
               ))}
             </select>

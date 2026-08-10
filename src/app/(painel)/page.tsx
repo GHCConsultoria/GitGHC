@@ -178,7 +178,7 @@ export default async function Home() {
           </span>
         </div>
         <p className="mb-6 max-w-2xl text-sm text-ink-soft">
-          Rascunho inicial de petição via IA, a partir do prazo confirmado — sempre um ponto de partida pra revisão,
+          Rascunho inicial de petição via IA, a partir do prazo confirmado. Sempre um ponto de partida pra revisão,
           nunca protocolado automaticamente.
         </p>
         <PainelConfirmados

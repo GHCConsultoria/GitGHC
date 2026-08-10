@@ -47,7 +47,7 @@ export default async function Escritorio() {
         <p className="eyebrow mt-6 mb-2">Cadastro</p>
         <h1 className="font-display text-4xl">Escritório</h1>
         <p className="mt-2 max-w-lg text-sm text-ink-soft">
-          A OAB cadastrada aqui é a que a ingestão do DJEN usa pra buscar publicações — troque o valor de
+          A OAB cadastrada aqui é a que a ingestão do DJEN usa pra buscar publicações. Troque o valor de
           demonstração pela OAB real antes de testar a busca de verdade.
         </p>
       </header>

@@ -21,7 +21,7 @@ export default async function Saude() {
         <p className="eyebrow mt-6 mb-2">Operação</p>
         <h1 className="font-display text-4xl">Painel de saúde</h1>
         <p className="mt-2 max-w-md text-sm text-ink-soft">
-          Status da automação diária — ingestão, cálculo de prazo e alertas.
+          Status da automação diária: ingestão, cálculo de prazo e alertas.
         </p>
       </header>
 

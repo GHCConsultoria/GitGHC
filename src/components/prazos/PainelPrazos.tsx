@@ -227,7 +227,7 @@ function CartaoPrazo({
 
       {!podeConfirmar && (
         <p className="mt-5 border-t border-rule pt-5 text-xs text-ink-faint">
-          Só advogados podem confirmar, editar ou descartar prazos — peça pra alguém com esse papel.
+          Só advogados podem confirmar, editar ou descartar prazos. Peça pra alguém com esse papel.
         </p>
       )}
 
@@ -316,19 +316,19 @@ function CartaoPrazo({
 function ConferenciaAutomatica({ verificacao }: { verificacao: ResultadoVerificacaoPrazo }) {
   if (verificacao.status === "CONFERIDO") {
     return (
-      <p className="mt-3 text-xs text-calm">✓ Recalculado e conferido — sem divergência em relação ao valor salvo.</p>
+      <p className="mt-3 text-xs text-calm">✓ Recalculado e conferido, sem divergência em relação ao valor salvo.</p>
     );
   }
   if (verificacao.status === "DIVERGENTE") {
     return (
       <p className="mt-3 text-xs text-urgent">
-        ⚠ Recálculo diverge do valor salvo — {verificacao.motivo}. Data recalculada:{" "}
+        ⚠ Recálculo diverge do valor salvo: {verificacao.motivo}. Data recalculada:{" "}
         <span className="font-data">{formatarDataCalendario(verificacao.dataFatalRecalculada)}</span>. Revise antes
         de confirmar.
       </p>
     );
   }
-  return <p className="mt-3 text-xs text-ink-faint">Conferência automática indisponível — {verificacao.motivo}.</p>;
+  return <p className="mt-3 text-xs text-ink-faint">Conferência automática indisponível: {verificacao.motivo}.</p>;
 }
 
 function FormularioEditarData({

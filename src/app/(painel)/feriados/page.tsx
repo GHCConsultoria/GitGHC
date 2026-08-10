@@ -58,8 +58,8 @@ export default async function Feriados({
         <p className="eyebrow mt-6 mb-2">Calendário forense</p>
         <h1 className="font-display text-4xl">Revisão de feriados</h1>
         <p className="mt-2 max-w-lg text-sm text-ink-soft">
-          O motor de prazo só calcula automaticamente para uma UF/ano depois que alguém revisar o calendário aqui —
-          sem isso, tudo vai para revisão manual.
+          O motor de prazo só calcula automaticamente para uma UF/ano depois que alguém revisar o calendário aqui.
+          Sem isso, tudo vai para revisão manual.
         </p>
       </header>
 

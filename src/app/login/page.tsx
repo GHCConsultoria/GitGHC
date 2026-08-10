@@ -22,7 +22,7 @@ export default function Login() {
           &ldquo;O sistema propõe<span style={{ color: "var(--signature-brass)" }}>,</span> o advogado confirma.&rdquo;
         </blockquote>
         <p className="max-w-sm text-sm" style={{ color: "var(--signature-paper)", opacity: 0.6 }}>
-          Nenhum prazo vira definitivo sem confirmação humana explícita — auditada, com autor e timestamp. É requisito
+          Nenhum prazo vira definitivo sem confirmação humana explícita, auditada com autor e timestamp. É requisito
           jurídico, não detalhe de UX.
         </p>
       </section>

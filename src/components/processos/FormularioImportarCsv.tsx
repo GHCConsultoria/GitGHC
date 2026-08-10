@@ -5,7 +5,7 @@ import { importarProcessosCsv, type ResultadoImportacaoCsv } from "@/lib/process
 
 const ROTULO_STATUS: Record<string, string> = {
   criado: "Criado",
-  duplicado: "Já existia — pulado",
+  duplicado: "Já existia (pulado)",
   invalida: "Inválida",
 };
 

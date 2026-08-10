@@ -39,7 +39,7 @@ export default async function Modelos() {
         <p className="eyebrow mt-6 mb-2">Cadastro</p>
         <h1 className="font-display text-4xl">Modelos de petição</h1>
         <p className="mt-2 max-w-lg text-sm text-ink-soft">
-          Modelos editáveis do escritório, preenchidos automaticamente com os dados do prazo — sem IA, sempre
+          Modelos editáveis do escritório, preenchidos automaticamente com os dados do prazo, sem IA e sempre
           previsível. Use{" "}
           {PLACEHOLDERS_MODELO.map((placeholder, indice) => (
             <span key={placeholder}>

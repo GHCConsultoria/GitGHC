@@ -86,7 +86,7 @@ export function FormularioNovoUsuario() {
 
       {credenciaisCriadas && (
         <div className="paper-card rounded-sm border-l-[3px] border-l-calm-line p-5">
-          <p className="eyebrow mb-2 text-calm">Usuário criado — copie agora, não aparece de novo</p>
+          <p className="eyebrow mb-2 text-calm">Usuário criado: copie agora, não aparece de novo</p>
           <dl className="grid grid-cols-1 gap-2 text-sm sm:grid-cols-2">
             <div>
               <dt className="text-ink-faint">E-mail</dt>

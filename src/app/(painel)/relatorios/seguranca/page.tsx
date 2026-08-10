@@ -54,7 +54,7 @@ export default async function PaginaRelatorioSeguranca({
       <div>
         <p className="eyebrow mb-1">Relatório de segurança</p>
         <h1 className="font-display text-3xl leading-tight">
-          {formatarDataCalendario(periodoInicio)} — {formatarDataCalendario(periodoFim)}
+          {formatarDataCalendario(periodoInicio)} a {formatarDataCalendario(periodoFim)}
         </h1>
         <p className="mt-2 text-sm text-ink-soft">Gerado em {formatarDataHora(new Date())}.</p>
       </div>
@@ -106,7 +106,7 @@ export default async function PaginaRelatorioSeguranca({
         <p className={`mt-2 text-sm ${relatorio.perdidos === 0 ? "text-calm" : "text-urgent"}`}>
           {relatorio.auditoriaCompleta
             ? `Todos os ${relatorio.confirmados} prazo(s) confirmado(s) ou cumprido(s) têm auditoria completa (autor e data de confirmação registrados).`
-            : "Atenção: foram encontrados prazos confirmados sem auditoria completa — isto não deveria acontecer, reporte ao suporte."}
+            : "Atenção: foram encontrados prazos confirmados sem auditoria completa. Isto não deveria acontecer; reporte ao suporte."}
         </p>
       </section>
 
@@ -120,7 +120,7 @@ export default async function PaginaRelatorioSeguranca({
                   {item.cliente} <span className="font-normal text-ink-faint">· {item.numeroCnj}</span>
                 </p>
                 <p className="mt-0.5 text-ink-soft">
-                  {item.tipoAto} — venceu em <span className="font-data">{formatarDataCalendario(item.dataFatal)}</span>{" "}
+                  {item.tipoAto} · venceu em <span className="font-data">{formatarDataCalendario(item.dataFatal)}</span>{" "}
                   sem confirmação
                 </p>
                 <Link
@@ -145,7 +145,7 @@ export default async function PaginaRelatorioSeguranca({
       </section>
 
       <p className="text-xs text-ink-faint print:hidden">
-        Métricas recalculadas a partir do banco a cada geração — nunca armazenadas ou estimadas.
+        Métricas recalculadas a partir do banco a cada geração. Nunca armazenadas ou estimadas.
       </p>
     </main>
   );

@@ -124,7 +124,7 @@ function ItemConfirmado({
   if (cumprido) {
     return (
       <div className="paper-card rounded-sm border-l-[3px] border-l-calm-line p-5 text-sm text-calm">
-        {prazo.processo.cliente} · {prazo.tipoAto} — marcado como cumprido.
+        {prazo.processo.cliente} · {prazo.tipoAto} · marcado como cumprido.
       </div>
     );
   }
@@ -135,7 +135,7 @@ function ItemConfirmado({
         {prazo.processo.cliente} · {prazo.processo.numeroCnj}
       </p>
       <p className="mt-1 text-sm text-ink-soft">
-        {prazo.tipoAto} — data fatal <span className="font-data text-ink">{formatarDataCalendario(prazo.dataFatal)}</span>
+        {prazo.tipoAto} · data fatal <span className="font-data text-ink">{formatarDataCalendario(prazo.dataFatal)}</span>
       </p>
 
       <div className="mt-4 flex flex-wrap items-center gap-2.5">
@@ -211,8 +211,8 @@ function ItemConfirmado({
           <div className="mt-4 border-t border-rule pt-4">
             <p className="mb-2 text-xs text-urgent">
               {origemConteudo === "modelo"
-                ? "Rascunho a partir de um modelo do escritório — confira os campos [A PREENCHER: ...] antes de usar."
-                : "Rascunho gerado por IA — revise com atenção antes de usar."}{" "}
+                ? "Rascunho a partir de um modelo do escritório. Confira os campos [A PREENCHER: ...] antes de usar."
+                : "Rascunho gerado por IA. Revise com atenção antes de usar."}{" "}
               Nunca protocole ou envie sem revisão humana.
             </p>
             <textarea
@@ -275,7 +275,7 @@ function FormularioProtocolo({
       }}
     >
       <p className="text-xs text-ink-soft">
-        Registre a evidência de que o ato foi protocolado — é isso que fecha o ciclo com prova, não só uma alegação.
+        Registre a evidência de que o ato foi protocolado. É isso que fecha o ciclo com prova, não só uma alegação.
       </p>
       <label className="text-sm">
         <span className="eyebrow mb-1.5 block">Número do protocolo (obrigatório)</span>

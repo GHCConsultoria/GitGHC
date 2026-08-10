@@ -53,7 +53,7 @@ export function PainelRiscos({
                 {item.cliente} <span className="font-normal text-ink-faint">· {item.numeroCnj}</span>
               </p>
               <p className="mt-0.5 text-xs text-ink-soft">
-                {item.tipoAto} — data fatal <span className="font-data text-ink">{formatarDataCalendario(item.dataFatal)}</span>
+                {item.tipoAto} · data fatal <span className="font-data text-ink">{formatarDataCalendario(item.dataFatal)}</span>
               </p>
             </div>
             <Link

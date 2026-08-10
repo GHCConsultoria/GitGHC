@@ -175,7 +175,7 @@ function FormularioModelo({
         />
       </label>
       <label className="text-sm">
-        <span className="eyebrow mb-1.5 block">Tipo de ato (opcional — em branco vale para qualquer um)</span>
+        <span className="eyebrow mb-1.5 block">Tipo de ato (opcional; em branco vale para qualquer um)</span>
         <select
           value={tipoAto}
           onChange={(evento) => setTipoAto(evento.target.value)}

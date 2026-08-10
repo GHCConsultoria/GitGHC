@@ -204,7 +204,7 @@ export default async function PaginaPublicacao({ params }: { params: { id: strin
               <li key={entrada.id} className="paper-card rounded-sm p-4 text-sm">
                 <div className="flex flex-wrap items-baseline justify-between gap-2">
                   <span className="font-medium text-ink">
-                    {entrada.acao} <span className="font-normal text-ink-faint">— {entrada.entidade}</span>
+                    {entrada.acao} <span className="font-normal text-ink-faint">· {entrada.entidade}</span>
                   </span>
                   <span className="font-data text-xs text-ink-faint">{formatarDataHora(entrada.criadoEm)}</span>
                 </div>

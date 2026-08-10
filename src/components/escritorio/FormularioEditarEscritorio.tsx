@@ -58,7 +58,7 @@ export function FormularioEditarEscritorio({
           className="w-full rounded-sm border border-rule bg-paper px-3 py-2 font-data text-sm outline-none focus:border-brass"
         />
         <span className="mt-1 block text-xs text-ink-faint">
-          Só os números importam pra consulta ao DJEN — o resto é só exibição.
+          Só os números importam pra consulta ao DJEN. O resto é só exibição.
         </span>
       </label>
 

@@ -34,7 +34,7 @@ export function PainelIntegracaoCalendario({ urlFeedInicial }: { urlFeedInicial:
       <p className="mb-3 text-sm text-ink-soft">
         Link privado com os prazos <strong className="text-ink">confirmados</strong> deste escritório, no formato que
         Google Calendar, Outlook e Apple Calendar entendem. Depois de adicionado, cada serviço busca as atualizações
-        sozinho — o intervalo (geralmente algumas horas) é decidido por eles, não é instantâneo.
+        sozinho. O intervalo (geralmente algumas horas) é decidido por eles, não é instantâneo.
       </p>
 
       <div className="flex flex-wrap items-center gap-2.5">

@@ -15,7 +15,7 @@ const plexSans = IBM_Plex_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "GitGHC — Conferência de Publicações e Prazos",
+  title: "GitGHC: Conferência de Publicações e Prazos",
   description: "Triagem de publicações e confirmação humana de prazos processuais.",
   appleWebApp: {
     capable: true,
