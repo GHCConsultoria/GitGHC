@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { SVGProps } from "react";
+import { CHAVE_TEMA } from "@/lib/tema";
 
 function Icone({ children, ...props }: SVGProps<SVGSVGElement> & { children: React.ReactNode }) {
   return (
@@ -243,6 +244,49 @@ export function SidebarPrincipal({
   );
 }
 
+function IconeSol(p: SVGProps<SVGSVGElement>) {
+  return (
+    <Icone {...p}>
+      <circle cx="10" cy="10" r="3.3" stroke="currentColor" />
+      <path d="M10 2.5v2M10 15.5v2M17.5 10h-2M4.5 10h-2M15.3 4.7l-1.4 1.4M6.1 13.9l-1.4 1.4M15.3 15.3l-1.4-1.4M6.1 6.1 4.7 4.7" stroke="currentColor" />
+    </Icone>
+  );
+}
+function IconeLua(p: SVGProps<SVGSVGElement>) {
+  return (
+    <Icone {...p}>
+      <path d="M16.5 12.3A6.8 6.8 0 0 1 7.7 3.5a7 7 0 1 0 8.8 8.8Z" stroke="currentColor" />
+    </Icone>
+  );
+}
+
+function AlternadorTema() {
+  const [tema, setTema] = useState<"light" | "dark">("light");
+
+  useEffect(() => {
+    const salvo = window.localStorage.getItem(CHAVE_TEMA);
+    setTema(salvo === "dark" ? "dark" : "light");
+  }, []);
+
+  function alternar() {
+    const proximo = tema === "dark" ? "light" : "dark";
+    document.documentElement.setAttribute("data-theme", proximo);
+    window.localStorage.setItem(CHAVE_TEMA, proximo);
+    setTema(proximo);
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={alternar}
+      className="flex w-full items-center gap-2.5 rounded-sm px-2.5 py-2 text-left text-sm text-ink-soft transition-colors hover:bg-paper hover:text-ink"
+    >
+      {tema === "dark" ? <IconeLua className="h-4 w-4" /> : <IconeSol className="h-4 w-4" />}
+      Tema {tema === "dark" ? "escuro" : "claro"}
+    </button>
+  );
+}
+
 function RodapeSidebar({
   usuario,
   acaoSair,
@@ -261,6 +305,7 @@ function RodapeSidebar({
           <p className="truncate text-xs text-ink-faint">{usuario.role === "ADVOGADO" ? "Advogado" : "Assistente"}</p>
         </div>
       </div>
+      <AlternadorTema />
       <form action={acaoSair}>
         <button
           type="submit"

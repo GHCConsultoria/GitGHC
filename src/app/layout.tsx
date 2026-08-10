@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { IBM_Plex_Sans } from "next/font/google";
+import { ScriptSemFlashDeTema } from "@/components/layout/ScriptSemFlashDeTema";
 import "./globals.css";
 
 // Fonte única pro app inteiro (era IBM Plex Sans no corpo + JetBrains Mono
@@ -31,7 +32,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-  themeColor: "#0a0b0d",
+  themeColor: "#eef0f3",
 };
 
 export default function RootLayout({
@@ -41,7 +42,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt-BR">
-      <body className={plexSans.variable}>{children}</body>
+      <body className={plexSans.variable}>
+        <ScriptSemFlashDeTema />
+        {children}
+      </body>
     </html>
   );
 }
