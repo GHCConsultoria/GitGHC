@@ -20,21 +20,9 @@ import { PainelNaoIdentificadas } from "@/components/prazos/PainelNaoIdentificad
 import { PainelConfirmados } from "@/components/prazos/PainelConfirmados";
 import { PainelSemClassificacao } from "@/components/prazos/PainelSemClassificacao";
 import { BotaoBuscarAgora } from "@/components/publicacoes/BotaoBuscarAgora";
-import { NavPrincipal, type ItemNav } from "@/components/layout/NavPrincipal";
-import { sair } from "@/app/login/actions";
+import { PainelResumo } from "@/components/prazos/PainelResumo";
 
 export const dynamic = "force-dynamic";
-
-const ITENS_NAV: ItemNav[] = [
-  { href: "/escritorio", rotulo: "Escritório" },
-  { href: "/processos", rotulo: "Processos" },
-  { href: "/feriados", rotulo: "Feriados" },
-  { href: "/agenda", rotulo: "Agenda" },
-  { href: "/modelos", rotulo: "Modelos" },
-  { href: "/relatorios/seguranca", rotulo: "Relatório" },
-  { href: "/usuarios", rotulo: "Usuários" },
-  { href: "/saude", rotulo: "Painel de saúde" },
-];
 
 export default async function Home() {
   let usuario;
@@ -93,12 +81,10 @@ export default async function Home() {
   // sem tarefa, sem confirmação ou sem ninguém ter visto o alerta. Array (não
   // Set) porque isto atravessa a fronteira server -> client component.
   const riscoPrazoIds = itensRisco.map((item) => item.prazoId);
+  const vencendoHoje = itensDashboard.filter((item) => item.bucket === "HOJE").length;
 
   return (
-    <>
-      <NavPrincipal itens={ITENS_NAV} acaoSair={sair} />
-
-      <main className="mx-auto flex min-h-screen max-w-5xl flex-col gap-14 px-6 py-10 sm:px-10 sm:py-14">
+    <main className="mx-auto flex min-h-screen max-w-5xl flex-col gap-14 px-6 py-10 sm:px-10 sm:py-14">
         <header className="stagger-in" style={{ "--stagger-index": 0 } as React.CSSProperties}>
           <p className="eyebrow mb-3">GitGHC · Conferência de prazos</p>
           <h1 className="font-display text-4xl leading-none tracking-tight sm:text-5xl">
@@ -111,6 +97,15 @@ export default async function Home() {
         </header>
 
         <section className="stagger-in" style={{ "--stagger-index": 1 } as React.CSSProperties}>
+          <PainelResumo
+            vencendoHoje={vencendoHoje}
+            aguardandoConfirmacao={itensFila.length}
+            confirmados={prazosConfirmados.length}
+            emRisco={itensRisco.length}
+          />
+        </section>
+
+        <section className="stagger-in" style={{ "--stagger-index": 2 } as React.CSSProperties}>
         <div className="mb-6 flex items-baseline justify-between rule pt-6">
           <h2 className="eyebrow pt-4">Riscos</h2>
           <span className="font-display pt-4 text-2xl text-ink-faint">
@@ -122,7 +117,7 @@ export default async function Home() {
 
       <BotaoBuscarAgora oab={escritorio.oab.replace(/\D/g, "")} uf={escritorio.uf} />
 
-      <section className="stagger-in" style={{ "--stagger-index": 2 } as React.CSSProperties}>
+      <section className="stagger-in" style={{ "--stagger-index": 3 } as React.CSSProperties}>
         <div className="mb-6 flex items-baseline justify-between rule pt-6">
           <h2 className="eyebrow pt-4">Painel de controle</h2>
           <span className="font-display pt-4 text-2xl text-ink-faint">
@@ -132,7 +127,7 @@ export default async function Home() {
         <PainelDashboard itens={itensDashboard} usuarios={usuariosSelecionaveis} riscoPrazoIds={riscoPrazoIds} />
       </section>
 
-      <section className="stagger-in" style={{ "--stagger-index": 3 } as React.CSSProperties}>
+      <section className="stagger-in" style={{ "--stagger-index": 4 } as React.CSSProperties}>
         <div className="mb-6 flex items-baseline justify-between rule pt-6">
           <h2 className="eyebrow pt-4">Aguardando confirmação</h2>
           <span className="font-display pt-4 text-2xl text-ink-faint">
@@ -147,7 +142,7 @@ export default async function Home() {
         />
       </section>
 
-      <section className="stagger-in" style={{ "--stagger-index": 4 } as React.CSSProperties}>
+      <section className="stagger-in" style={{ "--stagger-index": 5 } as React.CSSProperties}>
         <div className="mb-3 flex items-baseline justify-between rule pt-6">
           <h2 className="eyebrow pt-4">Não identificadas</h2>
           <span className="font-display pt-4 text-2xl text-ink-faint">
@@ -161,7 +156,7 @@ export default async function Home() {
         <PainelNaoIdentificadas publicacoes={publicacoesNaoIdentificadas} processos={processos} />
       </section>
 
-      <section className="stagger-in" style={{ "--stagger-index": 5 } as React.CSSProperties}>
+      <section className="stagger-in" style={{ "--stagger-index": 6 } as React.CSSProperties}>
         <div className="mb-3 flex items-baseline justify-between rule pt-6">
           <h2 className="eyebrow pt-4">Sem tipo de ato identificado</h2>
           <span className="font-display pt-4 text-2xl text-ink-faint">
@@ -175,7 +170,7 @@ export default async function Home() {
         <PainelSemClassificacao publicacoes={publicacoesSemPrazo} tiposDisponiveis={tiposAtoPrazo} />
       </section>
 
-      <section className="stagger-in" style={{ "--stagger-index": 6 } as React.CSSProperties}>
+      <section className="stagger-in" style={{ "--stagger-index": 7 } as React.CSSProperties}>
         <div className="mb-3 flex items-baseline justify-between rule pt-6">
           <h2 className="eyebrow pt-4">Confirmados</h2>
           <span className="font-display pt-4 text-2xl text-ink-faint">
@@ -194,6 +189,5 @@ export default async function Home() {
         />
         </section>
       </main>
-    </>
   );
 }

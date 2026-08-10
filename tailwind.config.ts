@@ -46,9 +46,19 @@ const config: Config = {
         },
       },
       fontFamily: {
-        display: ["var(--font-display)", "ui-monospace", "monospace"],
+        // As três variáveis apontam pra fonte única (ver layout.tsx) — os
+        // nomes de classe (font-display/font-data) ficam só por não exigir
+        // trocar ~40 usos espalhados pelo app; o que muda é o que carrega
+        // dentro da variável CSS.
+        display: ["var(--font-display)", "ui-sans-serif", "sans-serif"],
         body: ["var(--font-body)", "ui-sans-serif", "sans-serif"],
-        data: ["var(--font-data)", "ui-monospace", "monospace"],
+        data: ["var(--font-data)", "ui-sans-serif", "sans-serif"],
+      },
+      borderRadius: {
+        // rounded-sm é o raio padrão de card/botão/input no app inteiro —
+        // aumentar aqui, num lugar só, deixa tudo mais arredondado (estilo
+        // dashboard SaaS moderno) sem precisar tocar cada componente.
+        sm: "0.625rem",
       },
     },
   },
