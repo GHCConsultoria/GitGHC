@@ -4,6 +4,11 @@ import { formatarDataHora } from "@/lib/formatacao";
 
 export const dynamic = "force-dynamic";
 
+/** O cron do servidor sempre esbarra nesse bloqueio (ver aviso no topo da página) — não é um erro pra investigar. */
+function ehBloqueioConhecidoDoDjen(erro: string): boolean {
+  return erro.includes("DJEN respondeu 403");
+}
+
 export default async function Saude() {
   const [ultimaExecucao, publicacoesNaoIdentificadas, prazosPendentes, execucoesRecentes] = await Promise.all([
     prisma.execucaoCron.findFirst({ orderBy: { executadoEm: "desc" } }),
@@ -63,11 +68,16 @@ export default async function Saude() {
               <Item rotulo="Prazos criados" valor={ultimaExecucao.prazosCriados} />
               <Item rotulo="P/ revisão manual" valor={ultimaExecucao.prazosParaRevisaoManual} />
             </dl>
-            {ultimaExecucao.erro && (
-              <p className="mt-4 rounded-sm border border-urgent-line/30 bg-urgent-bg/40 p-3 font-data text-xs text-urgent">
-                {ultimaExecucao.erro}
-              </p>
-            )}
+            {ultimaExecucao.erro &&
+              (ehBloqueioConhecidoDoDjen(ultimaExecucao.erro) ? (
+                <p className="mt-4 rounded-sm border border-rule bg-paper-raised p-3 text-xs text-ink-faint">
+                  Bloqueio de rede do DJEN (403) — o motivo explicado no aviso acima, não um erro novo.
+                </p>
+              ) : (
+                <p className="mt-4 rounded-sm border border-urgent-line/30 bg-urgent-bg/40 p-3 font-data text-xs text-urgent">
+                  {ultimaExecucao.erro}
+                </p>
+              ))}
           </div>
         ) : (
           <p className="paper-card rounded-sm px-5 py-8 text-center text-sm text-ink-faint">
