@@ -131,7 +131,9 @@ export default async function Home() {
       <section className="stagger-in" style={{ "--stagger-index": 4 } as React.CSSProperties}>
         <div className="mb-6 flex items-baseline justify-between rule pt-6">
           <h2 className="eyebrow pt-4">Aguardando confirmação</h2>
-          <span className="font-display pt-4 text-2xl tabular-nums text-ink-faint">{String(itensFila.length).padStart(2, "0")}</span>
+          <span className="font-display pt-4 text-2xl tabular-nums text-ink-faint">
+            {String(itensFila.length).padStart(2, "0")}
+          </span>
         </div>
         <PainelPrazos
           itens={itensFila}
