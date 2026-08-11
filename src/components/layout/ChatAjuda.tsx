@@ -4,12 +4,20 @@ import { useEffect, useRef, useState } from "react";
 import { buscarPerguntas, PERGUNTAS_AJUDA, type PerguntaAjuda } from "@/lib/ajuda/perguntas";
 
 type Mensagem =
-  | { autor: "bot"; texto: string; sugestoes?: PerguntaAjuda[] }
-  | { autor: "usuario"; texto: string };
+  | { id: string; autor: "bot"; texto: string; sugestoes?: PerguntaAjuda[] }
+  | { id: string; autor: "usuario"; texto: string };
+
+let proximoIdMensagem = 1;
+function novoIdMensagem(): string {
+  proximoIdMensagem += 1;
+  return `msg-${proximoIdMensagem}`;
+}
 
 const MENSAGEM_INICIAL: Mensagem = {
+  id: "msg-inicial",
   autor: "bot",
-  texto: "Oi! Sou a central de dúvidas do GitGHC, sem IA: só respostas prontas sobre como usar o sistema. Escolha uma pergunta ou digite o que procura.",
+  texto:
+    "Oi! Sou a central de dúvidas do GitGHC, sem IA: só respostas prontas sobre como usar o sistema. Escolha uma pergunta ou digite o que procura.",
   sugestoes: PERGUNTAS_AJUDA.slice(0, 5),
 };
 
@@ -25,6 +33,7 @@ export function ChatAjuda() {
   const [consulta, setConsulta] = useState("");
   const fimRef = useRef<HTMLDivElement>(null);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `mensagens` não é lido no corpo, mas precisa disparar o efeito de novo a cada mensagem nova (senão o scroll só rola ao abrir o painel, não a cada resposta).
   useEffect(() => {
     if (aberto) fimRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [mensagens, aberto]);
@@ -32,8 +41,9 @@ export function ChatAjuda() {
   function perguntar(item: PerguntaAjuda) {
     setMensagens((atual) => [
       ...atual,
-      { autor: "usuario", texto: item.pergunta },
+      { id: novoIdMensagem(), autor: "usuario", texto: item.pergunta },
       {
+        id: novoIdMensagem(),
         autor: "bot",
         texto: item.resposta,
         sugestoes: PERGUNTAS_AJUDA.filter((p) => p.categoria === item.categoria && p.id !== item.id).slice(0, 3),
@@ -51,8 +61,9 @@ export function ChatAjuda() {
     if (resultados.length === 0) {
       setMensagens((atual) => [
         ...atual,
-        { autor: "usuario", texto },
+        { id: novoIdMensagem(), autor: "usuario", texto },
         {
+          id: novoIdMensagem(),
           autor: "bot",
           texto:
             "Não achei nada pronto sobre isso na base de ajuda. Tenta outras palavras, ou fala direto com o suporte do escritório.",
@@ -68,8 +79,13 @@ export function ChatAjuda() {
 
     setMensagens((atual) => [
       ...atual,
-      { autor: "usuario", texto },
-      { autor: "bot", texto: "Achei estas perguntas parecidas:", sugestoes: resultados.slice(0, 5) },
+      { id: novoIdMensagem(), autor: "usuario", texto },
+      {
+        id: novoIdMensagem(),
+        autor: "bot",
+        texto: "Achei estas perguntas parecidas:",
+        sugestoes: resultados.slice(0, 5),
+      },
     ]);
   }
 
@@ -82,11 +98,11 @@ export function ChatAjuda() {
         className="fixed bottom-4 right-4 z-40 flex h-12 w-12 items-center justify-center rounded-full bg-brass text-brass-on shadow-lg transition-transform hover:scale-105"
       >
         {aberto ? (
-          <svg viewBox="0 0 20 20" className="h-5 w-5" fill="none">
+          <svg viewBox="0 0 20 20" className="h-5 w-5" fill="none" aria-hidden="true">
             <path d="M5 5l10 10M15 5L5 15" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
           </svg>
         ) : (
-          <svg viewBox="0 0 20 20" className="h-5 w-5" fill="none">
+          <svg viewBox="0 0 20 20" className="h-5 w-5" fill="none" aria-hidden="true">
             <path
               d="M3 9.5c0-3.6 3.1-6.5 7-6.5s7 2.9 7 6.5-3.1 6.5-7 6.5c-.9 0-1.8-.15-2.6-.44L4 17l1.1-3.2C3.8 12.6 3 11.1 3 9.5Z"
               stroke="currentColor"
@@ -97,63 +113,67 @@ export function ChatAjuda() {
         )}
       </button>
 
-      {aberto && (
-        <div className="fixed bottom-20 right-4 z-40 flex h-[28rem] w-[min(22rem,calc(100vw-2rem))] flex-col overflow-hidden rounded-lg border border-rule bg-paper-raised shadow-lg">
-          <div className="flex items-center justify-between border-b border-rule px-4 py-3">
-            <div>
-              <p className="text-sm font-medium text-ink">Central de ajuda</p>
-              <p className="text-xs text-ink-faint">Respostas prontas, sem IA</p>
-            </div>
+      {/* Sempre montado (nunca `{aberto && ...}`) — a entrada/saída é só a
+          classe `chat-painel`/`is-open` do globals.css. CSS não anima um
+          elemento que já sumiu do DOM, então desmontar mataria a saída. */}
+      <div
+        aria-hidden={!aberto}
+        className={`chat-painel fixed bottom-20 right-4 z-40 flex h-[28rem] w-[min(22rem,calc(100vw-2rem))] flex-col overflow-hidden rounded-lg border border-rule bg-paper-raised shadow-lg ${
+          aberto ? "is-open" : ""
+        }`}
+      >
+        <div className="flex items-center justify-between border-b border-rule px-4 py-3">
+          <div>
+            <p className="text-sm font-medium text-ink">Central de ajuda</p>
+            <p className="text-xs text-ink-faint">Respostas prontas, sem IA</p>
           </div>
-
-          <div className="flex-1 space-y-3 overflow-y-auto px-3 py-3">
-            {mensagens.map((mensagem, indice) => (
-              <div key={indice}>
-                <div
-                  className={`max-w-[85%] rounded-lg px-3 py-2 text-sm ${
-                    mensagem.autor === "bot"
-                      ? "bg-paper text-ink"
-                      : "ml-auto bg-brass text-brass-on"
-                  }`}
-                >
-                  {mensagem.texto}
-                </div>
-                {mensagem.autor === "bot" && mensagem.sugestoes && mensagem.sugestoes.length > 0 && (
-                  <div className="mt-2 flex flex-col items-start gap-1.5">
-                    {mensagem.sugestoes.map((sugestao) => (
-                      <button
-                        key={sugestao.id}
-                        type="button"
-                        onClick={() => perguntar(sugestao)}
-                        className="rounded-full border border-brass/40 px-3 py-1 text-left text-xs text-brass transition-colors hover:bg-brass/10"
-                      >
-                        {sugestao.pergunta}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            ))}
-            <div ref={fimRef} />
-          </div>
-
-          <form onSubmit={buscar} className="flex gap-2 border-t border-rule p-3">
-            <input
-              type="text"
-              value={consulta}
-              onChange={(evento) => setConsulta(evento.target.value)}
-              placeholder="Digite sua dúvida…"
-              className="flex-1 rounded-sm border border-rule bg-paper px-3 py-1.5 text-sm outline-none focus:border-brass"
-            />
-            <button
-              type="submit"
-              className="rounded-sm bg-brass px-3 py-1.5 text-sm font-medium text-brass-on transition-colors hover:bg-brass-deep"
-            >
-              Enviar
-            </button>
-          </form>
         </div>
-      )}
+
+        <div className="flex-1 space-y-3 overflow-y-auto px-3 py-3">
+          {mensagens.map((mensagem) => (
+            <div key={mensagem.id}>
+              <div
+                className={`max-w-[85%] rounded-lg px-3 py-2 text-sm ${
+                  mensagem.autor === "bot" ? "bg-paper text-ink" : "ml-auto bg-brass text-brass-on"
+                }`}
+              >
+                {mensagem.texto}
+              </div>
+              {mensagem.autor === "bot" && mensagem.sugestoes && mensagem.sugestoes.length > 0 && (
+                <div className="mt-2 flex flex-col items-start gap-1.5">
+                  {mensagem.sugestoes.map((sugestao) => (
+                    <button
+                      key={sugestao.id}
+                      type="button"
+                      onClick={() => perguntar(sugestao)}
+                      className="rounded-full border border-brass/40 px-3 py-1 text-left text-xs text-brass transition-colors hover:bg-brass/10"
+                    >
+                      {sugestao.pergunta}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
+          <div ref={fimRef} />
+        </div>
+
+        <form onSubmit={buscar} className="flex gap-2 border-t border-rule p-3">
+          <input
+            type="text"
+            value={consulta}
+            onChange={(evento) => setConsulta(evento.target.value)}
+            placeholder="Digite sua dúvida…"
+            className="flex-1 rounded-sm border border-rule bg-paper px-3 py-1.5 text-sm outline-none focus:border-brass"
+          />
+          <button
+            type="submit"
+            className="rounded-sm bg-brass px-3 py-1.5 text-sm font-medium text-brass-on transition-colors hover:bg-brass-deep"
+          >
+            Enviar
+          </button>
+        </form>
+      </div>
     </>
   );
 }
