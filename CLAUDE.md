@@ -33,6 +33,16 @@ Sistema de conferência de publicações e prazos processuais para escritório d
 - `src/app` — rotas Next.js (App Router)
 - `src/lib` — lógica de domínio (cálculo de prazo, providers de publicação, etc.)
 
+## Fluxo de trabalho: Issues e Pull Requests
+
+Vale pra qualquer agente/modelo trabalhando neste repositório, não só a sessão atual.
+
+- **Toda tarefa (correção, melhoria ou nova função) vira uma Issue no GitHub antes do trabalho começar** — título curto, descrição objetiva do problema ou do que vai mudar.
+- **Nunca commitar direto na branch de produção** (`claude/new-session-0uybmv`, branch padrão do repositório — é o que a Vercel implanta em produção). O trabalho acontece numa branch própria criada a partir dela.
+- **Abrir PR pra mesclar de volta.** A descrição do PR sempre menciona a issue correspondente (`Closes #N` ou `Refs #N`, conforme o caso) — é assim que se rastreia por que cada mudança existe.
+- **O deploy é consequência do merge do PR**, não de um push avulso. É o PR mesclado que efetivamente promove a mudança pra produção.
+- Depois de mesclar, espelhar a branch de produção pra `claude/construa-p9z4rf` (preview), do jeito que já era feito antes desse fluxo existir — as duas continuam apontando pro mesmo estado.
+
 ## Como rodar
 
 ```bash
