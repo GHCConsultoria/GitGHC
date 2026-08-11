@@ -1,5 +1,6 @@
 import carregarDinamico from "next/dynamic";
 import { redirect } from "next/navigation";
+import type { Usuario } from "@prisma/client";
 import { obterUsuarioAtual, UsuarioNaoAutenticadoError, UsuarioNaoCadastradoError } from "@/lib/auth";
 import { SidebarPrincipal } from "@/components/layout/SidebarPrincipal";
 import { sair } from "@/app/login/actions";
@@ -23,7 +24,7 @@ export const dynamic = "force-dynamic";
  * deste grupo de propósito — não têm sidebar nem exigem esta sessão.
  */
 export default async function PainelLayout({ children }: { children: React.ReactNode }) {
-  let usuario;
+  let usuario: Usuario;
   try {
     usuario = await obterUsuarioAtual();
   } catch (erro) {

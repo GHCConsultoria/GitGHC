@@ -4,10 +4,17 @@ import { useEffect, useRef, useState } from "react";
 import { buscarPerguntas, PERGUNTAS_AJUDA, type PerguntaAjuda } from "@/lib/ajuda/perguntas";
 
 type Mensagem =
-  | { autor: "bot"; texto: string; sugestoes?: PerguntaAjuda[] }
-  | { autor: "usuario"; texto: string };
+  | { id: string; autor: "bot"; texto: string; sugestoes?: PerguntaAjuda[] }
+  | { id: string; autor: "usuario"; texto: string };
+
+let proximoIdMensagem = 1;
+function novoIdMensagem(): string {
+  proximoIdMensagem += 1;
+  return `msg-${proximoIdMensagem}`;
+}
 
 const MENSAGEM_INICIAL: Mensagem = {
+  id: "msg-inicial",
   autor: "bot",
   texto: "Oi! Sou a central de dúvidas do GitGHC, sem IA: só respostas prontas sobre como usar o sistema. Escolha uma pergunta ou digite o que procura.",
   sugestoes: PERGUNTAS_AJUDA.slice(0, 5),
@@ -25,6 +32,7 @@ export function ChatAjuda() {
   const [consulta, setConsulta] = useState("");
   const fimRef = useRef<HTMLDivElement>(null);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `mensagens` não é lido no corpo, mas precisa disparar o efeito de novo a cada mensagem nova (senão o scroll só rola ao abrir o painel, não a cada resposta).
   useEffect(() => {
     if (aberto) fimRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [mensagens, aberto]);
@@ -32,8 +40,9 @@ export function ChatAjuda() {
   function perguntar(item: PerguntaAjuda) {
     setMensagens((atual) => [
       ...atual,
-      { autor: "usuario", texto: item.pergunta },
+      { id: novoIdMensagem(), autor: "usuario", texto: item.pergunta },
       {
+        id: novoIdMensagem(),
         autor: "bot",
         texto: item.resposta,
         sugestoes: PERGUNTAS_AJUDA.filter((p) => p.categoria === item.categoria && p.id !== item.id).slice(0, 3),
@@ -51,8 +60,9 @@ export function ChatAjuda() {
     if (resultados.length === 0) {
       setMensagens((atual) => [
         ...atual,
-        { autor: "usuario", texto },
+        { id: novoIdMensagem(), autor: "usuario", texto },
         {
+          id: novoIdMensagem(),
           autor: "bot",
           texto:
             "Não achei nada pronto sobre isso na base de ajuda. Tenta outras palavras, ou fala direto com o suporte do escritório.",
@@ -68,8 +78,8 @@ export function ChatAjuda() {
 
     setMensagens((atual) => [
       ...atual,
-      { autor: "usuario", texto },
-      { autor: "bot", texto: "Achei estas perguntas parecidas:", sugestoes: resultados.slice(0, 5) },
+      { id: novoIdMensagem(), autor: "usuario", texto },
+      { id: novoIdMensagem(), autor: "bot", texto: "Achei estas perguntas parecidas:", sugestoes: resultados.slice(0, 5) },
     ]);
   }
 
@@ -82,11 +92,11 @@ export function ChatAjuda() {
         className="fixed bottom-4 right-4 z-40 flex h-12 w-12 items-center justify-center rounded-full bg-brass text-brass-on shadow-lg transition-transform hover:scale-105"
       >
         {aberto ? (
-          <svg viewBox="0 0 20 20" className="h-5 w-5" fill="none">
+          <svg viewBox="0 0 20 20" className="h-5 w-5" fill="none" aria-hidden="true">
             <path d="M5 5l10 10M15 5L5 15" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
           </svg>
         ) : (
-          <svg viewBox="0 0 20 20" className="h-5 w-5" fill="none">
+          <svg viewBox="0 0 20 20" className="h-5 w-5" fill="none" aria-hidden="true">
             <path
               d="M3 9.5c0-3.6 3.1-6.5 7-6.5s7 2.9 7 6.5-3.1 6.5-7 6.5c-.9 0-1.8-.15-2.6-.44L4 17l1.1-3.2C3.8 12.6 3 11.1 3 9.5Z"
               stroke="currentColor"
@@ -114,8 +124,8 @@ export function ChatAjuda() {
         </div>
 
         <div className="flex-1 space-y-3 overflow-y-auto px-3 py-3">
-          {mensagens.map((mensagem, indice) => (
-            <div key={indice}>
+          {mensagens.map((mensagem) => (
+            <div key={mensagem.id}>
               <div
                 className={`max-w-[85%] rounded-lg px-3 py-2 text-sm ${
                   mensagem.autor === "bot" ? "bg-paper text-ink" : "ml-auto bg-brass text-brass-on"
