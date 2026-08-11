@@ -17,7 +17,7 @@ const MENSAGEM_INICIAL: Mensagem = {
   id: "msg-inicial",
   autor: "bot",
   texto:
-    "Oi! Sou a central de dúvidas do GitGHC, sem IA: só respostas prontas sobre como usar o sistema. Escolha uma pergunta ou digite o que procura.",
+    "Oi! Sou a central de dúvidas do Zelo, sem IA: só respostas prontas sobre como usar o sistema. Escolha uma pergunta ou digite o que procura.",
   sugestoes: PERGUNTAS_AJUDA.slice(0, 5),
 };
 

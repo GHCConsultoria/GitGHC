@@ -6,20 +6,20 @@ export const contentType = "image/png";
 
 export default function AppleIcon() {
   return new ImageResponse(
-    (
-      <div
-        style={{
-          width: "100%",
-          height: "100%",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          background: "#0a0b0d",
-        }}
-      >
-        <span style={{ color: "#22d3ee", fontSize: 108, fontWeight: 700, fontFamily: "monospace" }}>G</span>
-      </div>
-    ),
+    <div
+      style={{
+        width: "100%",
+        height: "100%",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        background: "#0a0b0d",
+      }}
+    >
+      <span style={{ color: "#2dd4bf", fontSize: 108, fontWeight: 800, fontFamily: "system-ui", letterSpacing: -4 }}>
+        Z
+      </span>
+    </div>,
     { ...size },
   );
 }

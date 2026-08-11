@@ -12,11 +12,7 @@ export interface PrazoParaIcs {
 
 /** Escapa texto livre para uso em campos TEXT do ICS (RFC 5545 §3.3.11). */
 function escaparTextoIcs(valor: string): string {
-  return valor
-    .replace(/\\/g, "\\\\")
-    .replace(/;/g, "\\;")
-    .replace(/,/g, "\\,")
-    .replace(/\r?\n/g, "\\n");
+  return valor.replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/,/g, "\\,").replace(/\r?\n/g, "\\n");
 }
 
 /**
@@ -87,7 +83,7 @@ export function gerarFeedIcs(nomeCalendario: string, prazos: PrazoParaIcs[], ago
   const linhas = [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
-    "PRODID:-//GitGHC//Prazos//PT-BR",
+    "PRODID:-//Zelo//Prazos//PT-BR",
     "CALSCALE:GREGORIAN",
     "METHOD:PUBLISH",
     `X-WR-CALNAME:${escaparTextoIcs(nomeCalendario)}`,

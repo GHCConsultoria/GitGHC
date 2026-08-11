@@ -1,8 +1,8 @@
 "use client";
 
-import { useFormState, useFormStatus } from "react-dom";
 import Link from "next/link";
-import { entrar, type EstadoLogin } from "./actions";
+import { useFormState, useFormStatus } from "react-dom";
+import { type EstadoLogin, entrar } from "./actions";
 
 const ESTADO_INICIAL: EstadoLogin = {};
 
@@ -16,7 +16,7 @@ export default function Login() {
         style={{ background: "var(--signature-ink)", color: "var(--signature-paper)" }}
       >
         <p className="eyebrow" style={{ color: "var(--signature-paper)", opacity: 0.5 }}>
-          GitGHC
+          Zelo
         </p>
         <blockquote className="font-display text-3xl leading-snug">
           &ldquo;O sistema propõe<span style={{ color: "var(--signature-brass)" }}>,</span> o advogado confirma.&rdquo;
@@ -29,7 +29,7 @@ export default function Login() {
 
       <section className="flex flex-col justify-center px-6 py-16 sm:px-16">
         <div className="mx-auto w-full max-w-sm">
-          <p className="eyebrow sm:hidden">GitGHC</p>
+          <p className="eyebrow sm:hidden">Zelo</p>
           <h1 className="font-display mt-1 text-3xl">Entrar</h1>
           <p className="mt-2 text-sm text-ink-soft">Conferência de publicações e prazos.</p>
 
