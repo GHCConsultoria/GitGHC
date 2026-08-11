@@ -51,6 +51,15 @@ Vale pra qualquer agente/modelo trabalhando neste repositório, não só a sess�
 - `npm run knip` hoje roda como informativo no CI (não quebra o build) — há um backlog conhecido de arquivo/export não usado, ainda não limpo. Corrigir aos poucos, não é bloqueante pra novo PR.
 - CI (`.github/workflows/ci.yml`) roda em todo PR: typecheck, lint (ESLint + Biome só nos arquivos alterados), arch:check, knip (informativo) e testes (unitários + integração, com Postgres de serviço).
 
+## Cuidado ao instalar/remover dependência
+
+`npm install -D`/`npm uninstall` incrementais têm deixado o `package-lock.json` fora de sincronia neste projeto (faltam entradas de dependência opcional tipo `@emnapi/*`, e `npm ci` quebra no CI mesmo com `npm install` local dizendo "up to date"). Depois de mexer em dependência, sempre faça reinstalação limpa antes de commitar:
+
+```bash
+rm -rf node_modules package-lock.json
+npm install
+```
+
 ## Como rodar
 
 ```bash
