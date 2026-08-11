@@ -6,7 +6,15 @@
     "useIgnoreFile": true
   },
   "files": {
-    "includes": ["src/**", "prisma/**/*.ts", "e2e/**", "playwright.config.ts", "!**/*.d.ts"]
+    "includes": [
+      "src/**",
+      "prisma/**/*.ts",
+      "e2e/**",
+      "playwright.config.ts",
+      "next.config.mjs",
+      "sentry.*.config.ts",
+      "!**/*.d.ts"
+    ]
   },
   "formatter": {
     "enabled": true,
