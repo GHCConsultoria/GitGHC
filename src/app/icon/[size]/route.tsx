@@ -12,30 +12,28 @@ export async function GET(_request: Request, context: { params: { size: string }
   const tamanho = Number(context.params.size) || 192;
 
   return new ImageResponse(
-    (
-      <div
+    <div
+      style={{
+        width: "100%",
+        height: "100%",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        background: "#0a0b0d",
+      }}
+    >
+      <span
         style={{
-          width: "100%",
-          height: "100%",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          background: "#0a0b0d",
+          color: "#2dd4bf",
+          fontSize: tamanho * 0.56,
+          fontWeight: 800,
+          fontFamily: "system-ui",
+          letterSpacing: -2,
         }}
       >
-        <span
-          style={{
-            color: "#22d3ee",
-            fontSize: tamanho * 0.56,
-            fontWeight: 700,
-            fontFamily: "monospace",
-            letterSpacing: -2,
-          }}
-        >
-          G
-        </span>
-      </div>
-    ),
+        Z
+      </span>
+    </div>,
     { width: tamanho, height: tamanho },
   );
 }

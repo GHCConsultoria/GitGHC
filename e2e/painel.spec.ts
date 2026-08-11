@@ -4,7 +4,7 @@ test.describe("Painel principal", () => {
   test("carrega o dashboard com a sidebar e o resumo de prazos", async ({ page }) => {
     await page.goto("/");
 
-    // "GitGHC" aparece duas vezes no DOM (sidebar de desktop e o drawer
+    // "Zelo" aparece duas vezes no DOM (sidebar de desktop e o drawer
     // mobile, um deles sempre oculto por CSS conforme o viewport) — checar
     // o cabeçalho da página e um link da sidebar já confirma que carregou.
     await expect(page.getByRole("heading", { name: /Publicações/ })).toBeVisible();

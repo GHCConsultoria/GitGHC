@@ -1,6 +1,8 @@
-# GitGHC — Convenções do Projeto (GHC)
+# Zelo — Convenções do Projeto (GHC)
 
-Sistema de conferência de publicações e prazos processuais para escritório de advocacia.
+Sistema de conferência de publicações e prazos processuais para escritório de advocacia. Produto rebatizado de
+"GitGHC" para "Zelo" (ver Issue #15) — o nome do repositório GitHub continua `GitGHC` de propósito, não foi
+renomeado junto.
 
 ## Stack
 

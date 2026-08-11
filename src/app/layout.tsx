@@ -15,12 +15,12 @@ const plexSans = IBM_Plex_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "GitGHC: Conferência de Publicações e Prazos",
+  title: "Zelo: Conferência de Publicações e Prazos",
   description: "Triagem de publicações e confirmação humana de prazos processuais.",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "GitGHC",
+    title: "Zelo",
   },
 };
 

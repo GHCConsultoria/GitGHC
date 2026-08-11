@@ -1,4 +1,4 @@
-# GitGHC — Conferência de Publicações e Prazos
+# Zelo — Conferência de Publicações e Prazos
 
 MVP para triagem automática de publicações do diário oficial e cálculo assistido de
 prazos processuais. O sistema **propõe** o prazo; a confirmação humana é sempre

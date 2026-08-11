@@ -1,14 +1,22 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { SVGProps } from "react";
+import { useEffect, useState } from "react";
 import { CHAVE_TEMA } from "@/lib/tema";
 
 function Icone({ children, ...props }: SVGProps<SVGSVGElement> & { children: React.ReactNode }) {
   return (
-    <svg viewBox="0 0 20 20" fill="none" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <svg
+      viewBox="0 0 20 20"
+      fill="none"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      {...props}
+    >
       {children}
     </svg>
   );
@@ -24,7 +32,10 @@ const IconeGrade = (p: SVGProps<SVGSVGElement>) => (
 );
 const IconePasta = (p: SVGProps<SVGSVGElement>) => (
   <Icone {...p}>
-    <path d="M3 5.5A1.5 1.5 0 0 1 4.5 4h3l1.5 2h7A1.5 1.5 0 0 1 17.5 7.5v8A1.5 1.5 0 0 1 16 17H4.5A1.5 1.5 0 0 1 3 15.5v-10Z" stroke="currentColor" />
+    <path
+      d="M3 5.5A1.5 1.5 0 0 1 4.5 4h3l1.5 2h7A1.5 1.5 0 0 1 17.5 7.5v8A1.5 1.5 0 0 1 16 17H4.5A1.5 1.5 0 0 1 3 15.5v-10Z"
+      stroke="currentColor"
+    />
   </Icone>
 );
 const IconeDocumento = (p: SVGProps<SVGSVGElement>) => (
@@ -112,19 +123,8 @@ function ehAtivo(pathname: string, href: string): boolean {
 function Marca() {
   return (
     <div className="flex items-center gap-2.5 px-5 py-5">
-      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brass text-brass-on">
-        <svg viewBox="0 0 20 20" fill="none" className="h-5 w-5">
-          <path
-            d="M4 10.5 8 14l8-8"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
-      </div>
       <div className="min-w-0">
-        <p className="truncate text-sm font-semibold text-ink">GitGHC</p>
+        <p className="truncate text-lg font-extrabold tracking-tight text-ink">Zelo</p>
         <p className="truncate text-xs text-ink-faint">Conferência de prazos</p>
       </div>
     </div>
@@ -147,9 +147,7 @@ function ListaNav({ onNavegar }: { onNavegar?: () => void }) {
                     href={item.href}
                     onClick={onNavegar}
                     className={`flex items-center gap-2.5 rounded-sm px-2.5 py-2 text-sm transition-colors ${
-                      ativo
-                        ? "bg-brass text-brass-on font-medium"
-                        : "text-ink-soft hover:bg-paper hover:text-ink"
+                      ativo ? "bg-brass text-brass-on font-medium" : "text-ink-soft hover:bg-paper hover:text-ink"
                     }`}
                   >
                     <item.icone className="h-4 w-4 shrink-0" />
@@ -186,12 +184,7 @@ export function SidebarPrincipal({
       {/* Barra mobile */}
       <div className="sticky top-0 z-30 flex items-center justify-between border-b border-rule bg-paper-raised/95 px-4 py-3 backdrop-blur-md lg:hidden">
         <div className="flex items-center gap-2">
-          <div className="flex h-7 w-7 items-center justify-center rounded-md bg-brass text-brass-on">
-            <svg viewBox="0 0 20 20" fill="none" className="h-4 w-4">
-              <path d="M4 10.5 8 14l8-8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </div>
-          <span className="text-sm font-semibold text-ink">GitGHC</span>
+          <span className="text-base font-extrabold tracking-tight text-ink">Zelo</span>
         </div>
         <button
           type="button"
@@ -199,7 +192,7 @@ export function SidebarPrincipal({
           aria-label="Abrir menu"
           className="flex h-8 w-8 items-center justify-center rounded-sm text-ink-soft transition-colors hover:text-ink"
         >
-          <svg viewBox="0 0 20 20" className="h-5 w-5" fill="none">
+          <svg viewBox="0 0 20 20" className="h-5 w-5" fill="none" aria-hidden="true">
             <path d="M3 5h14M3 10h14M3 15h14" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
           </svg>
         </button>
@@ -223,7 +216,7 @@ export function SidebarPrincipal({
                 aria-label="Fechar menu"
                 className="mr-4 flex h-8 w-8 items-center justify-center rounded-sm text-ink-soft hover:text-ink"
               >
-                <svg viewBox="0 0 20 20" className="h-5 w-5" fill="none">
+                <svg viewBox="0 0 20 20" className="h-5 w-5" fill="none" aria-hidden="true">
                   <path d="M5 5l10 10M15 5L5 15" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
                 </svg>
               </button>
@@ -248,7 +241,10 @@ function IconeSol(p: SVGProps<SVGSVGElement>) {
   return (
     <Icone {...p}>
       <circle cx="10" cy="10" r="3.3" stroke="currentColor" />
-      <path d="M10 2.5v2M10 15.5v2M17.5 10h-2M4.5 10h-2M15.3 4.7l-1.4 1.4M6.1 13.9l-1.4 1.4M15.3 15.3l-1.4-1.4M6.1 6.1 4.7 4.7" stroke="currentColor" />
+      <path
+        d="M10 2.5v2M10 15.5v2M17.5 10h-2M4.5 10h-2M15.3 4.7l-1.4 1.4M6.1 13.9l-1.4 1.4M15.3 15.3l-1.4-1.4M6.1 6.1 4.7 4.7"
+        stroke="currentColor"
+      />
     </Icone>
   );
 }

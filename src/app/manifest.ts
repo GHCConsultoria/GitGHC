@@ -2,8 +2,8 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "GitGHC: Conferência de Publicações e Prazos",
-    short_name: "GitGHC",
+    name: "Zelo: Conferência de Publicações e Prazos",
+    short_name: "Zelo",
     description: "Triagem de publicações e confirmação humana de prazos processuais.",
     start_url: "/",
     display: "standalone",

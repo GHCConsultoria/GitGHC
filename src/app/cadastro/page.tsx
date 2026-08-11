@@ -1,9 +1,9 @@
 "use client";
 
-import { useFormState, useFormStatus } from "react-dom";
 import Link from "next/link";
-import { cadastrarEscritorio, type EstadoCadastro } from "@/lib/cadastro/acoes";
+import { useFormState, useFormStatus } from "react-dom";
 import { UFS_BRASIL } from "@/lib/br/ufs";
+import { cadastrarEscritorio, type EstadoCadastro } from "@/lib/cadastro/acoes";
 
 const ESTADO_INICIAL: EstadoCadastro = {};
 
@@ -17,7 +17,7 @@ export default function Cadastro() {
         style={{ background: "var(--signature-ink)", color: "var(--signature-paper)" }}
       >
         <p className="eyebrow" style={{ color: "var(--signature-paper)", opacity: 0.5 }}>
-          GitGHC
+          Zelo
         </p>
         <blockquote className="font-display text-3xl leading-snug">
           &ldquo;Do Diário Oficial ao protocolo<span style={{ color: "var(--signature-brass)" }}>,</span> sem perder o
@@ -30,7 +30,7 @@ export default function Cadastro() {
 
       <section className="flex flex-col justify-center px-6 py-16 sm:px-16">
         <div className="mx-auto w-full max-w-sm">
-          <p className="eyebrow sm:hidden">GitGHC</p>
+          <p className="eyebrow sm:hidden">Zelo</p>
           <h1 className="font-display mt-1 text-3xl">Cadastrar escritório</h1>
           <p className="mt-2 text-sm text-ink-soft">Você entra como o primeiro advogado do escritório.</p>
 
