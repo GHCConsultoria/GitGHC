@@ -6,7 +6,7 @@
     "useIgnoreFile": true
   },
   "files": {
-    "includes": ["src/**", "prisma/**/*.ts", "!**/*.d.ts"]
+    "includes": ["src/**", "prisma/**/*.ts", "e2e/**", "playwright.config.ts", "!**/*.d.ts"]
   },
   "formatter": {
     "enabled": true,
