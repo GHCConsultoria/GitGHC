@@ -109,7 +109,7 @@ export default async function Home() {
       <section className="stagger-in" style={{ "--stagger-index": 2 } as React.CSSProperties}>
         <div className="mb-6 flex items-baseline justify-between rule pt-6">
           <h2 className="eyebrow pt-4">Riscos</h2>
-          <span className="font-display pt-4 text-2xl text-ink-faint">
+          <span className="font-display pt-4 text-2xl tabular-nums text-ink-faint">
             {String(itensRisco.length + alertasFeriados.length).padStart(2, "0")}
           </span>
         </div>
@@ -121,7 +121,7 @@ export default async function Home() {
       <section className="stagger-in" style={{ "--stagger-index": 3 } as React.CSSProperties}>
         <div className="mb-6 flex items-baseline justify-between rule pt-6">
           <h2 className="eyebrow pt-4">Painel de controle</h2>
-          <span className="font-display pt-4 text-2xl text-ink-faint">
+          <span className="font-display pt-4 text-2xl tabular-nums text-ink-faint">
             {String(itensDashboard.length).padStart(2, "0")}
           </span>
         </div>
@@ -131,7 +131,9 @@ export default async function Home() {
       <section className="stagger-in" style={{ "--stagger-index": 4 } as React.CSSProperties}>
         <div className="mb-6 flex items-baseline justify-between rule pt-6">
           <h2 className="eyebrow pt-4">Aguardando confirmação</h2>
-          <span className="font-display pt-4 text-2xl text-ink-faint">{String(itensFila.length).padStart(2, "0")}</span>
+          <span className="font-display pt-4 text-2xl tabular-nums text-ink-faint">
+            {String(itensFila.length).padStart(2, "0")}
+          </span>
         </div>
         <PainelPrazos
           itens={itensFila}
@@ -144,7 +146,7 @@ export default async function Home() {
       <section className="stagger-in" style={{ "--stagger-index": 5 } as React.CSSProperties}>
         <div className="mb-3 flex items-baseline justify-between rule pt-6">
           <h2 className="eyebrow pt-4">Não identificadas</h2>
-          <span className="font-display pt-4 text-2xl text-ink-faint">
+          <span className="font-display pt-4 text-2xl tabular-nums text-ink-faint">
             {String(publicacoesNaoIdentificadas.length).padStart(2, "0")}
           </span>
         </div>
@@ -158,7 +160,7 @@ export default async function Home() {
       <section className="stagger-in" style={{ "--stagger-index": 6 } as React.CSSProperties}>
         <div className="mb-3 flex items-baseline justify-between rule pt-6">
           <h2 className="eyebrow pt-4">Sem tipo de ato identificado</h2>
-          <span className="font-display pt-4 text-2xl text-ink-faint">
+          <span className="font-display pt-4 text-2xl tabular-nums text-ink-faint">
             {String(publicacoesSemPrazo.length).padStart(2, "0")}
           </span>
         </div>
@@ -172,7 +174,7 @@ export default async function Home() {
       <section className="stagger-in" style={{ "--stagger-index": 7 } as React.CSSProperties}>
         <div className="mb-3 flex items-baseline justify-between rule pt-6">
           <h2 className="eyebrow pt-4">Confirmados</h2>
-          <span className="font-display pt-4 text-2xl text-ink-faint">
+          <span className="font-display pt-4 text-2xl tabular-nums text-ink-faint">
             {String(prazosConfirmados.length).padStart(2, "0")}
           </span>
         </div>
