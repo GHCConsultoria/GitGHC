@@ -19,7 +19,16 @@ const ROTULO_PARTE_REGEX =
 function extrairClienteSugerido(texto: string): string | null {
   const match = texto.match(ROTULO_PARTE_REGEX);
   if (!match) return null;
-  const nome = match[1]?.trim().replace(/\s+/g, " ") ?? "";
+  let nome = match[1]?.trim().replace(/\s+/g, " ") ?? "";
+
+  // " - " costuma separar o nome da parte do despacho/decisão que vem a
+  // seguir no texto da publicação (ex.: "Joao da Silva - Vistos. Intime-se.")
+  // — sem esse corte, o texto residual do ato vinha junto na sugestão.
+  const indiceSeparador = nome.indexOf(" - ");
+  if (indiceSeparador !== -1) {
+    nome = nome.slice(0, indiceSeparador).trim();
+  }
+
   return nome.length >= 2 ? nome : null;
 }
 
