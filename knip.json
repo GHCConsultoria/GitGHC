@@ -1,0 +1,5 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "entry": ["src/app/**/{page,layout,route,loading,error,not-found}.tsx"],
+  "project": ["src/**/*.{ts,tsx}", "prisma/**/*.ts"]
+}

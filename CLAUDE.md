@@ -43,6 +43,14 @@ Vale pra qualquer agente/modelo trabalhando neste repositório, não só a sess�
 - **O deploy é consequência do merge do PR**, não de um push avulso. É o PR mesclado que efetivamente promove a mudança pra produção.
 - Depois de mesclar, espelhar a branch de produção pra `claude/construa-p9z4rf` (preview), do jeito que já era feito antes desse fluxo existir — as duas continuam apontando pro mesmo estado.
 
+## Qualidade de código
+
+- `npm run quality` roda tudo de uma vez: `next lint`, `biome check`, `knip`, `arch:check` (dependency-cruiser) e os testes.
+- **Mensagem de commit segue Conventional Commits** (`feat:`, `fix:`, `chore:`, etc.) — tem hook de commit-msg (husky + commitlint) validando isso localmente.
+- `npm run arch:check` aplica como regra de lint o princípio "domínio sem I/O de rota": `src/lib` não pode importar de `src/app`.
+- `npm run knip` hoje roda como informativo no CI (não quebra o build) — há um backlog conhecido de arquivo/export não usado, ainda não limpo. Corrigir aos poucos, não é bloqueante pra novo PR.
+- CI (`.github/workflows/ci.yml`) roda em todo PR: typecheck, lint (ESLint + Biome só nos arquivos alterados), arch:check, knip (informativo) e testes (unitários + integração, com Postgres de serviço).
+
 ## Como rodar
 
 ```bash
