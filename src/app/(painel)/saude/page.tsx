@@ -110,7 +110,7 @@ export default async function Saude() {
 function Metrica({ rotulo, valor }: { rotulo: string; valor: number | string }) {
   return (
     <div className="paper-card rounded-sm p-4">
-      <p className="font-display text-3xl leading-none text-brass">{valor}</p>
+      <p className="font-display text-3xl leading-none tabular-nums text-brass">{valor}</p>
       <p className="mt-2 text-xs leading-snug text-ink-soft">{rotulo}</p>
     </div>
   );
