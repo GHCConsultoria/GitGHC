@@ -263,6 +263,11 @@ button:not(:disabled):active {
       transform: none;
     }
   }
+  /* Ícone de progresso continua visível (o texto ao lado já diz "Buscando…"),
+     só para de girar — indicador funcional, não decorativo. */
+  .animate-spin {
+    animation: none;
+  }
 }
 
 @layer utilities {
@@ -323,6 +328,45 @@ button:not(:disabled):active {
     animation: fade-up 560ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
     animation-delay: calc(var(--stagger-index, 0) * 90ms);
   }
+
+  /* Placeholder de carregamento (ver components/ui/Skeleton.tsx e os
+     loading.tsx de cada rota) — brilho breve varrendo o bloco, só enquanto
+     o dado ainda não chegou. Não é decorativo: some assim que o conteúdo
+     real renderiza. */
+  .skeleton {
+    background: color-mix(in srgb, var(--color-ink-faint) 16%, transparent);
+    border-radius: 4px;
+    position: relative;
+    overflow: hidden;
+  }
+  .skeleton::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(
+      90deg,
+      transparent,
+      color-mix(in srgb, var(--color-ink) 8%, transparent),
+      transparent
+    );
+    animation: skeleton-sweep 1.6s var(--ease-in-out) infinite;
+  }
+
+  /* Painel do widget de ajuda: sempre montado, alterna via classe em vez de
+     desmontar — é o jeito de ter uma animação de saída real sem depender de
+     lib nenhuma (CSS não anima elemento que já sumiu do DOM). */
+  .chat-painel {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+    pointer-events: none;
+    transition: opacity 240ms var(--ease-out), transform 240ms var(--ease-out);
+  }
+  .chat-painel.is-open {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    pointer-events: auto;
+  }
 }
 
 @keyframes fade-up {
@@ -333,6 +377,12 @@ button:not(:disabled):active {
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@keyframes skeleton-sweep {
+  100% {
+    transform: translateX(100%);
   }
 }
 
@@ -347,6 +397,16 @@ button:not(:disabled):active {
   .paper-card-interactive:hover,
   .paper-card-interactive:active {
     transition: box-shadow 200ms var(--ease-out), border-color 200ms var(--ease-out);
+    transform: none;
+  }
+  .skeleton::after {
+    animation: none;
+  }
+  .chat-painel {
+    transition: opacity 240ms var(--ease-out);
+    transform: none;
+  }
+  .chat-painel.is-open {
     transform: none;
   }
 }

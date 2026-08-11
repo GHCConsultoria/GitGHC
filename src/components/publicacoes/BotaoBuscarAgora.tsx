@@ -94,8 +94,14 @@ export function BotaoBuscarAgora({ oab, uf }: { oab: string; uf: string }) {
           type="button"
           disabled={pendente}
           onClick={() => buscar(false)}
-          className="shrink-0 rounded-sm bg-brass px-4 py-2 text-sm font-medium text-brass-on shadow-sm transition-colors hover:bg-brass-deep disabled:opacity-50"
+          className="flex shrink-0 items-center gap-2 rounded-sm bg-brass px-4 py-2 text-sm font-medium text-brass-on shadow-sm transition-colors hover:bg-brass-deep disabled:opacity-50"
         >
+          {pendente && (
+            <svg viewBox="0 0 20 20" className="h-3.5 w-3.5 animate-spin" fill="none" aria-hidden="true">
+              <circle cx="10" cy="10" r="8" stroke="currentColor" strokeWidth="2.5" strokeOpacity="0.3" />
+              <path d="M18 10a8 8 0 0 0-8-8" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+            </svg>
+          )}
           {pendente ? (automatica ? "Verificando…" : "Buscando…") : "Buscar publicações agora"}
         </button>
       </div>

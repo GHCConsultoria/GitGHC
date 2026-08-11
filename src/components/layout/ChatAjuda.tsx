@@ -97,63 +97,67 @@ export function ChatAjuda() {
         )}
       </button>
 
-      {aberto && (
-        <div className="fixed bottom-20 right-4 z-40 flex h-[28rem] w-[min(22rem,calc(100vw-2rem))] flex-col overflow-hidden rounded-lg border border-rule bg-paper-raised shadow-lg">
-          <div className="flex items-center justify-between border-b border-rule px-4 py-3">
-            <div>
-              <p className="text-sm font-medium text-ink">Central de ajuda</p>
-              <p className="text-xs text-ink-faint">Respostas prontas, sem IA</p>
-            </div>
+      {/* Sempre montado (nunca `{aberto && ...}`) — a entrada/saída é só a
+          classe `chat-painel`/`is-open` do globals.css. CSS não anima um
+          elemento que já sumiu do DOM, então desmontar mataria a saída. */}
+      <div
+        aria-hidden={!aberto}
+        className={`chat-painel fixed bottom-20 right-4 z-40 flex h-[28rem] w-[min(22rem,calc(100vw-2rem))] flex-col overflow-hidden rounded-lg border border-rule bg-paper-raised shadow-lg ${
+          aberto ? "is-open" : ""
+        }`}
+      >
+        <div className="flex items-center justify-between border-b border-rule px-4 py-3">
+          <div>
+            <p className="text-sm font-medium text-ink">Central de ajuda</p>
+            <p className="text-xs text-ink-faint">Respostas prontas, sem IA</p>
           </div>
-
-          <div className="flex-1 space-y-3 overflow-y-auto px-3 py-3">
-            {mensagens.map((mensagem, indice) => (
-              <div key={indice}>
-                <div
-                  className={`max-w-[85%] rounded-lg px-3 py-2 text-sm ${
-                    mensagem.autor === "bot"
-                      ? "bg-paper text-ink"
-                      : "ml-auto bg-brass text-brass-on"
-                  }`}
-                >
-                  {mensagem.texto}
-                </div>
-                {mensagem.autor === "bot" && mensagem.sugestoes && mensagem.sugestoes.length > 0 && (
-                  <div className="mt-2 flex flex-col items-start gap-1.5">
-                    {mensagem.sugestoes.map((sugestao) => (
-                      <button
-                        key={sugestao.id}
-                        type="button"
-                        onClick={() => perguntar(sugestao)}
-                        className="rounded-full border border-brass/40 px-3 py-1 text-left text-xs text-brass transition-colors hover:bg-brass/10"
-                      >
-                        {sugestao.pergunta}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            ))}
-            <div ref={fimRef} />
-          </div>
-
-          <form onSubmit={buscar} className="flex gap-2 border-t border-rule p-3">
-            <input
-              type="text"
-              value={consulta}
-              onChange={(evento) => setConsulta(evento.target.value)}
-              placeholder="Digite sua dúvida…"
-              className="flex-1 rounded-sm border border-rule bg-paper px-3 py-1.5 text-sm outline-none focus:border-brass"
-            />
-            <button
-              type="submit"
-              className="rounded-sm bg-brass px-3 py-1.5 text-sm font-medium text-brass-on transition-colors hover:bg-brass-deep"
-            >
-              Enviar
-            </button>
-          </form>
         </div>
-      )}
+
+        <div className="flex-1 space-y-3 overflow-y-auto px-3 py-3">
+          {mensagens.map((mensagem, indice) => (
+            <div key={indice}>
+              <div
+                className={`max-w-[85%] rounded-lg px-3 py-2 text-sm ${
+                  mensagem.autor === "bot" ? "bg-paper text-ink" : "ml-auto bg-brass text-brass-on"
+                }`}
+              >
+                {mensagem.texto}
+              </div>
+              {mensagem.autor === "bot" && mensagem.sugestoes && mensagem.sugestoes.length > 0 && (
+                <div className="mt-2 flex flex-col items-start gap-1.5">
+                  {mensagem.sugestoes.map((sugestao) => (
+                    <button
+                      key={sugestao.id}
+                      type="button"
+                      onClick={() => perguntar(sugestao)}
+                      className="rounded-full border border-brass/40 px-3 py-1 text-left text-xs text-brass transition-colors hover:bg-brass/10"
+                    >
+                      {sugestao.pergunta}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
+          <div ref={fimRef} />
+        </div>
+
+        <form onSubmit={buscar} className="flex gap-2 border-t border-rule p-3">
+          <input
+            type="text"
+            value={consulta}
+            onChange={(evento) => setConsulta(evento.target.value)}
+            placeholder="Digite sua dúvida…"
+            className="flex-1 rounded-sm border border-rule bg-paper px-3 py-1.5 text-sm outline-none focus:border-brass"
+          />
+          <button
+            type="submit"
+            className="rounded-sm bg-brass px-3 py-1.5 text-sm font-medium text-brass-on transition-colors hover:bg-brass-deep"
+          >
+            Enviar
+          </button>
+        </form>
+      </div>
     </>
   );
 }

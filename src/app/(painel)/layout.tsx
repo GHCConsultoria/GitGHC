@@ -1,8 +1,17 @@
+import carregarDinamico from "next/dynamic";
 import { redirect } from "next/navigation";
 import { obterUsuarioAtual, UsuarioNaoAutenticadoError, UsuarioNaoCadastradoError } from "@/lib/auth";
 import { SidebarPrincipal } from "@/components/layout/SidebarPrincipal";
-import { ChatAjuda } from "@/components/layout/ChatAjuda";
 import { sair } from "@/app/login/actions";
+
+// Widget flutuante, não crítico pra primeira renderização — adiado do bundle
+// inicial. ssr:false porque o botão só faz sentido depois de hidratado (é
+// puro estado de cliente), então não há nada a ganhar renderizando no servidor.
+// Nome "carregarDinamico" (não "dynamic") pra não colidir com o
+// `export const dynamic` abaixo, que é config de rota do Next, não relacionado.
+const ChatAjuda = carregarDinamico(() => import("@/components/layout/ChatAjuda").then((m) => m.ChatAjuda), {
+  ssr: false,
+});
 
 export const dynamic = "force-dynamic";
 
