@@ -16,7 +16,8 @@ function novoIdMensagem(): string {
 const MENSAGEM_INICIAL: Mensagem = {
   id: "msg-inicial",
   autor: "bot",
-  texto: "Oi! Sou a central de dúvidas do GitGHC, sem IA: só respostas prontas sobre como usar o sistema. Escolha uma pergunta ou digite o que procura.",
+  texto:
+    "Oi! Sou a central de dúvidas do GitGHC, sem IA: só respostas prontas sobre como usar o sistema. Escolha uma pergunta ou digite o que procura.",
   sugestoes: PERGUNTAS_AJUDA.slice(0, 5),
 };
 
@@ -79,7 +80,12 @@ export function ChatAjuda() {
     setMensagens((atual) => [
       ...atual,
       { id: novoIdMensagem(), autor: "usuario", texto },
-      { id: novoIdMensagem(), autor: "bot", texto: "Achei estas perguntas parecidas:", sugestoes: resultados.slice(0, 5) },
+      {
+        id: novoIdMensagem(),
+        autor: "bot",
+        texto: "Achei estas perguntas parecidas:",
+        sugestoes: resultados.slice(0, 5),
+      },
     ]);
   }
 

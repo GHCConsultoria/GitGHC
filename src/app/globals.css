@@ -36,8 +36,10 @@
   --color-sheipe-deep: #4ade80;
   --color-on-sheipe: #04150a;
 
-  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.4), 0 12px 40px -16px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.03);
-  --shadow-card-hover: 0 2px 4px rgba(0, 0, 0, 0.45), 0 20px 56px -18px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  --shadow-card:
+    0 1px 2px rgba(0, 0, 0, 0.4), 0 12px 40px -16px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.03);
+  --shadow-card-hover:
+    0 2px 4px rgba(0, 0, 0, 0.45), 0 20px 56px -18px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.05);
   --shadow-focus: 0 0 0 3px color-mix(in srgb, var(--color-brass) 35%, transparent);
 
   --glow-brass: rgba(45, 212, 191, 0.08);
@@ -122,8 +124,10 @@
   --color-sheipe: #22c55e;
   --color-sheipe-deep: #4ade80;
   --color-on-sheipe: #04150a;
-  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.4), 0 12px 40px -16px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.03);
-  --shadow-card-hover: 0 2px 4px rgba(0, 0, 0, 0.45), 0 20px 56px -18px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  --shadow-card:
+    0 1px 2px rgba(0, 0, 0, 0.4), 0 12px 40px -16px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.03);
+  --shadow-card-hover:
+    0 2px 4px rgba(0, 0, 0, 0.45), 0 20px 56px -18px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.05);
   --shadow-focus: 0 0 0 3px color-mix(in srgb, var(--color-brass) 35%, transparent);
   --glow-brass: rgba(45, 212, 191, 0.08);
 }
@@ -201,7 +205,9 @@ body > div {
  * <129) só ignora a regra e a página aparece direto, sem quebrar nada.
  */
 main {
-  transition: opacity 560ms var(--ease-out), transform 560ms var(--ease-out);
+  transition:
+    opacity 560ms var(--ease-out),
+    transform 560ms var(--ease-out);
 }
 @starting-style {
   main {
@@ -298,7 +304,10 @@ button:not(:disabled):active {
      exemplo) — não aplicar em cards que só contêm formulário/seletor, senão
      o hover promete um clique que não existe. */
   .paper-card-interactive {
-    transition: transform 200ms var(--ease-out), box-shadow 200ms var(--ease-out), border-color 200ms var(--ease-out);
+    transition:
+      transform 200ms var(--ease-out),
+      box-shadow 200ms var(--ease-out),
+      border-color 200ms var(--ease-out);
   }
   @media (hover: hover) and (pointer: fine) {
     .paper-card-interactive:hover {
@@ -344,12 +353,7 @@ button:not(:disabled):active {
     position: absolute;
     inset: 0;
     transform: translateX(-100%);
-    background: linear-gradient(
-      90deg,
-      transparent,
-      color-mix(in srgb, var(--color-ink) 8%, transparent),
-      transparent
-    );
+    background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--color-ink) 8%, transparent), transparent);
     animation: skeleton-sweep 1.6s var(--ease-in-out) infinite;
   }
 
@@ -360,7 +364,9 @@ button:not(:disabled):active {
     opacity: 0;
     transform: translateY(8px) scale(0.98);
     pointer-events: none;
-    transition: opacity 240ms var(--ease-out), transform 240ms var(--ease-out);
+    transition:
+      opacity 240ms var(--ease-out),
+      transform 240ms var(--ease-out);
   }
   .chat-painel.is-open {
     opacity: 1;
@@ -396,7 +402,9 @@ button:not(:disabled):active {
   .paper-card-interactive,
   .paper-card-interactive:hover,
   .paper-card-interactive:active {
-    transition: box-shadow 200ms var(--ease-out), border-color 200ms var(--ease-out);
+    transition:
+      box-shadow 200ms var(--ease-out),
+      border-color 200ms var(--ease-out);
     transform: none;
   }
   .skeleton::after {

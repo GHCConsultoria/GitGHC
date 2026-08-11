@@ -1,9 +1,9 @@
+import type { Usuario } from "@prisma/client";
 import carregarDinamico from "next/dynamic";
 import { redirect } from "next/navigation";
-import type { Usuario } from "@prisma/client";
-import { obterUsuarioAtual, UsuarioNaoAutenticadoError, UsuarioNaoCadastradoError } from "@/lib/auth";
-import { SidebarPrincipal } from "@/components/layout/SidebarPrincipal";
 import { sair } from "@/app/login/actions";
+import { SidebarPrincipal } from "@/components/layout/SidebarPrincipal";
+import { obterUsuarioAtual, UsuarioNaoAutenticadoError, UsuarioNaoCadastradoError } from "@/lib/auth";
 
 // Widget flutuante, não crítico pra primeira renderização — adiado do bundle
 // inicial. ssr:false porque o botão só faz sentido depois de hidratado (é
