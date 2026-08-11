@@ -8,9 +8,17 @@
     "start": "next start",
     "lint": "next lint",
     "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
     "postinstall": "prisma generate && prisma generate --schema=prisma/nutri/schema.prisma",
     "db:push:nutri": "node prisma/nutri/aplicar-schema.mjs",
-    "db:seed:nutri": "tsx prisma/nutri/seed.ts"
+    "db:seed:nutri": "tsx prisma/nutri/seed.ts",
+    "prepare": "husky",
+    "biome:check": "biome check .",
+    "biome:check:changed": "biome check --changed --no-errors-on-unmatched",
+    "format": "biome format --write .",
+    "knip": "knip",
+    "arch:check": "depcruise src --config .dependency-cruiser.cjs",
+    "quality": "npm run lint && npm run biome:check && npm run knip && npm run arch:check && npm run test"
   },
   "dependencies": {
     "@libsql/client": "^0.8.1",
@@ -24,11 +32,18 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@biomejs/biome": "2.5.8",
+    "@commitlint/cli": "21.2.1",
+    "@commitlint/config-conventional": "21.2.0",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
+    "@vitest/coverage-v8": "4.1.10",
+    "dependency-cruiser": "18.2.0",
     "eslint": "^8",
     "eslint-config-next": "14.2.35",
+    "husky": "9.1.7",
+    "knip": "6.32.1",
     "playwright": "^1.62.0",
     "postcss": "^8",
     "prisma": "5.22.0",

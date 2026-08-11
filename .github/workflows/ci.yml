@@ -1,0 +1,73 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [claude/new-session-0uybmv, claude/construa-p9z4rf]
+  push:
+    branches: [claude/new-session-0uybmv]
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: gitghc
+          POSTGRES_PASSWORD: gitghc
+          POSTGRES_DB: gitghc_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U gitghc"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://gitghc:gitghc@localhost:5432/gitghc_test
+      DIRECT_URL: postgresql://gitghc:gitghc@localhost:5432/gitghc_test
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Aplica as migrations no Postgres de teste
+        run: npx prisma migrate deploy
+
+      - name: Checagem de tipos
+        run: npx tsc --noEmit
+
+      - name: Lint (ESLint / next lint)
+        run: npm run lint
+
+      - name: Lint (Biome — só os arquivos alterados neste PR)
+        if: github.event_name == 'pull_request'
+        run: npx biome check --changed --since=origin/${{ github.base_ref }} --no-errors-on-unmatched
+
+      - name: Lint (Biome — checagem completa fora de PR)
+        if: github.event_name != 'pull_request'
+        run: npm run biome:check
+
+      - name: Contrato de arquitetura (dependency-cruiser)
+        run: npm run arch:check
+
+      - name: Arquivos/exports não usados (Knip) — informativo, não quebra o build ainda
+        run: npm run knip
+        continue-on-error: true
+
+      - name: Testes (unitários + integração)
+        run: npm run test:coverage
+
+      - name: Cobertura → Codecov
+        if: ${{ !cancelled() }}
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: false
