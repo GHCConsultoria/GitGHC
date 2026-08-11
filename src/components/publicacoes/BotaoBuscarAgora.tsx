@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
-import { buscarPublicacoesNoNavegador } from "@/lib/publicacoes/buscar-no-navegador";
 import { processarBuscaDoNavegador, type ResultadoBuscaManual } from "@/lib/publicacoes/acoes";
+import { buscarPublicacoesNoNavegador } from "@/lib/publicacoes/buscar-no-navegador";
 
 // Janela de segurança: reprocessa os últimos dias mesmo que já tenha sido
 // buscado antes — idempotente pelo hashConteudo, então reprocessar não
@@ -64,6 +64,7 @@ export function BotaoBuscarAgora({ oab, uf }: { oab: string; uf: string }) {
     });
   }
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `buscar` de propósito fora da lista — é recriada a cada render, e o guard `jaTentouAuto` já garante que isto roda uma vez só por montagem.
   useEffect(() => {
     if (jaTentouAuto.current) return;
     jaTentouAuto.current = true;
@@ -112,8 +113,8 @@ export function BotaoBuscarAgora({ oab, uf }: { oab: string; uf: string }) {
         <div className="mt-3 text-sm">
           {resultado.sucesso ? (
             <p className="text-calm">
-              {resultado.encontradas} encontrada(s) · {resultado.novas} nova(s) · {resultado.vinculadas} vinculada(s)
-              · {resultado.naoIdentificadas} não identificada(s) · {resultado.prazosCriados} prazo(s) criado(s)
+              {resultado.encontradas} encontrada(s) · {resultado.novas} nova(s) · {resultado.vinculadas} vinculada(s) ·{" "}
+              {resultado.naoIdentificadas} não identificada(s) · {resultado.prazosCriados} prazo(s) criado(s)
               {resultado.prazosParaRevisaoManual > 0 && ` · ${resultado.prazosParaRevisaoManual} para revisão manual`}
             </p>
           ) : (
