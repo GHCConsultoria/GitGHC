@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useFormState, useFormStatus } from "react-dom";
 import { UFS_BRASIL } from "@/lib/br/ufs";
@@ -16,9 +17,12 @@ export default function Cadastro() {
         className="hidden flex-col justify-between p-12 sm:flex"
         style={{ background: "var(--signature-ink)", color: "var(--signature-paper)" }}
       >
-        <p className="eyebrow" style={{ color: "var(--signature-paper)", opacity: 0.5 }}>
-          Zelo
-        </p>
+        <div className="flex items-center gap-2" style={{ opacity: 0.5 }}>
+          <Image src="/icons/zelo-mark.png" alt="" width={18} height={18} />
+          <p className="eyebrow" style={{ color: "var(--signature-paper)" }}>
+            Zelo
+          </p>
+        </div>
         <blockquote className="font-display text-3xl leading-snug">
           &ldquo;Do Diário Oficial ao protocolo<span style={{ color: "var(--signature-brass)" }}>,</span> sem perder o
           controle de nenhum prazo.&rdquo;
@@ -30,7 +34,10 @@ export default function Cadastro() {
 
       <section className="flex flex-col justify-center px-6 py-16 sm:px-16">
         <div className="mx-auto w-full max-w-sm">
-          <p className="eyebrow sm:hidden">Zelo</p>
+          <div className="flex items-center gap-1.5 sm:hidden">
+            <Image src="/icons/zelo-mark.png" alt="" width={16} height={16} />
+            <p className="eyebrow">Zelo</p>
+          </div>
           <h1 className="font-display mt-1 text-3xl">Cadastrar escritório</h1>
           <p className="mt-2 text-sm text-ink-soft">Você entra como o primeiro advogado do escritório.</p>
 

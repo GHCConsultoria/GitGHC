@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { SVGProps } from "react";
@@ -123,6 +124,7 @@ function ehAtivo(pathname: string, href: string): boolean {
 function Marca() {
   return (
     <div className="flex items-center gap-2.5 px-5 py-5">
+      <Image src="/icons/zelo-mark.png" alt="" width={36} height={36} className="shrink-0" />
       <div className="min-w-0">
         <p className="truncate text-lg font-extrabold tracking-tight text-ink">Zelo</p>
         <p className="truncate text-xs text-ink-faint">Conferência de prazos</p>
@@ -184,6 +186,7 @@ export function SidebarPrincipal({
       {/* Barra mobile */}
       <div className="sticky top-0 z-30 flex items-center justify-between border-b border-rule bg-paper-raised/95 px-4 py-3 backdrop-blur-md lg:hidden">
         <div className="flex items-center gap-2">
+          <Image src="/icons/zelo-mark.png" alt="" width={28} height={28} />
           <span className="text-base font-extrabold tracking-tight text-ink">Zelo</span>
         </div>
         <button
