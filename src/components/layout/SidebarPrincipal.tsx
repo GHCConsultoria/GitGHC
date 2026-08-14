@@ -82,6 +82,24 @@ const IconePulso = (p: SVGProps<SVGSVGElement>) => (
     <path d="M2.5 10.5h3l1.5-4 3 8 1.5-4h6" stroke="currentColor" />
   </Icone>
 );
+const IconeFunil = (p: SVGProps<SVGSVGElement>) => (
+  <Icone {...p}>
+    <path d="M3 4h14l-5.5 6.5V16l-3 1.5v-7L3 4Z" stroke="currentColor" />
+  </Icone>
+);
+const IconeAlvo = (p: SVGProps<SVGSVGElement>) => (
+  <Icone {...p}>
+    <circle cx="10" cy="10" r="6.5" stroke="currentColor" />
+    <circle cx="10" cy="10" r="3" stroke="currentColor" />
+    <circle cx="10" cy="10" r="0.6" fill="currentColor" stroke="none" />
+  </Icone>
+);
+const IconeAgenda = (p: SVGProps<SVGSVGElement>) => (
+  <Icone {...p}>
+    <rect x="3" y="4" width="14" height="13" rx="1.5" stroke="currentColor" />
+    <path d="M3 8h14M7 2.5v3M13 2.5v3M6.5 11.5l1.5 1.5 3-3.2" stroke="currentColor" />
+  </Icone>
+);
 
 export interface ItemNavSidebar {
   href: string;
@@ -114,10 +132,21 @@ export const GRUPOS_NAV_PAINEL: GrupoNavSidebar[] = [
       { href: "/saude", rotulo: "Painel de saúde", icone: IconePulso },
     ],
   },
+  {
+    titulo: "CRM comercial",
+    itens: [
+      { href: "/crm", rotulo: "Painel de vendas", icone: IconeFunil },
+      { href: "/crm/leads", rotulo: "Leads", icone: IconeAlvo },
+      { href: "/crm/agenda", rotulo: "Agenda comercial", icone: IconeAgenda },
+    ],
+  },
 ];
 
 function ehAtivo(pathname: string, href: string): boolean {
-  if (href === "/") return pathname === "/";
+  // "/" e "/crm" casam só de forma exata: ambos têm itens-filho próprios na
+  // navegação (/crm/leads, /crm/agenda), então marcar por prefixo acenderia
+  // o pai junto com o filho.
+  if (href === "/" || href === "/crm") return pathname === href;
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 

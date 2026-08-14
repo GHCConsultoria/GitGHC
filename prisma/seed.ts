@@ -1,6 +1,14 @@
-import { PrismaClient, RoleUsuario, TipoFeriado, Prisma } from "@prisma/client";
-import { calcularPrazo } from "../src/lib/prazos/calculo";
+import {
+  EstagioLead,
+  OrigemLead,
+  type Prisma,
+  PrismaClient,
+  ResultadoVisita,
+  RoleUsuario,
+  TipoFeriado,
+} from "@prisma/client";
 import { UFS_BRASIL as UFS } from "../src/lib/br/ufs";
+import { calcularPrazo } from "../src/lib/prazos/calculo";
 
 const prisma = new PrismaClient();
 
@@ -15,12 +23,24 @@ const FERIADOS_NACIONAIS_2026: Array<{
   tipo: TipoFeriado;
 }> = [
   { data: "2026-01-01", descricao: "Confraternização Universal", tipo: TipoFeriado.FERIADO },
-  { data: "2026-02-16", descricao: "Carnaval (segunda-feira) — ponto facultativo nacional, confirmar adesão do tribunal", tipo: TipoFeriado.SUSPENSAO },
-  { data: "2026-02-17", descricao: "Carnaval (terça-feira) — ponto facultativo nacional, confirmar adesão do tribunal", tipo: TipoFeriado.SUSPENSAO },
+  {
+    data: "2026-02-16",
+    descricao: "Carnaval (segunda-feira) — ponto facultativo nacional, confirmar adesão do tribunal",
+    tipo: TipoFeriado.SUSPENSAO,
+  },
+  {
+    data: "2026-02-17",
+    descricao: "Carnaval (terça-feira) — ponto facultativo nacional, confirmar adesão do tribunal",
+    tipo: TipoFeriado.SUSPENSAO,
+  },
   { data: "2026-04-03", descricao: "Sexta-feira Santa (Paixão de Cristo)", tipo: TipoFeriado.FERIADO },
   { data: "2026-04-21", descricao: "Tiradentes", tipo: TipoFeriado.FERIADO },
   { data: "2026-05-01", descricao: "Dia do Trabalho", tipo: TipoFeriado.FERIADO },
-  { data: "2026-06-04", descricao: "Corpus Christi — ponto facultativo nacional, confirmar adesão do tribunal", tipo: TipoFeriado.SUSPENSAO },
+  {
+    data: "2026-06-04",
+    descricao: "Corpus Christi — ponto facultativo nacional, confirmar adesão do tribunal",
+    tipo: TipoFeriado.SUSPENSAO,
+  },
   { data: "2026-09-07", descricao: "Independência do Brasil", tipo: TipoFeriado.FERIADO },
   { data: "2026-10-12", descricao: "Nossa Senhora Aparecida", tipo: TipoFeriado.FERIADO },
   { data: "2026-11-02", descricao: "Finados", tipo: TipoFeriado.FERIADO },
@@ -44,10 +64,7 @@ function diasEntre(inicioIso: string, fimIso: string): string[] {
 // ano que tocam 2026 (fim de 2025→início de 2026 e fim de 2026→início de 2027),
 // já que prazos calculados perto de qualquer uma das duas bordas precisam do
 // recesso completo.
-const RECESSO_DIAS = [
-  ...diasEntre("2025-12-20", "2026-01-20"),
-  ...diasEntre("2026-12-20", "2027-01-20"),
-];
+const RECESSO_DIAS = [...diasEntre("2025-12-20", "2026-01-20"), ...diasEntre("2026-12-20", "2027-01-20")];
 
 async function seedEscritorioEUsuario() {
   const escritorio = await prisma.escritorio.upsert({
@@ -285,11 +302,210 @@ async function seedDadosDemonstracaoPainel() {
   console.log(`Semeados ${DEMO_ITENS.length} prazos de demonstração + 1 publicação não identificada.`);
 }
 
+// Meio-dia de São Paulo (15:00 UTC) deslocado em `offsetDias` a partir de
+// hoje — as datas de visita/próximo passo do CRM são ancoradas assim para o
+// dia ficar inequívoco no fuso do usuário (ver src/lib/crm/atividade.ts).
+function diaRelativoSaoPaulo(offsetDias: number): Date {
+  const base = new Date();
+  base.setUTCDate(base.getUTCDate() + offsetDias);
+  base.setUTCHours(15, 0, 0, 0);
+  return base;
+}
+
+// Dados ILUSTRATIVOS do CRM comercial para exercitar o funil, o BI e a agenda
+// localmente. Idempotente: só semeia se o escritório demo ainda não tiver
+// nenhum lead, para não duplicar a cada `db seed`.
+async function seedCrmComercial() {
+  const jaTemLeads = await prisma.leadComercial.count({ where: { escritorioId: "escritorio-demo" } });
+  if (jaTemLeads > 0) {
+    console.log("CRM comercial: escritório demo já tem leads — pulando semeadura.");
+    return;
+  }
+
+  const usuario = await prisma.usuario.findUnique({ where: { authUserId: "demo-advogado-auth-id" } });
+  const responsavelId = usuario?.id ?? null;
+
+  const motivosDescricao = [
+    "Preço acima do orçamento",
+    "Já usa um concorrente",
+    "Sem necessidade agora",
+    "Não retornou o contato",
+  ];
+  const motivos = await Promise.all(
+    motivosDescricao.map((descricao) =>
+      prisma.motivoPerdaComercial.create({ data: { escritorioId: "escritorio-demo", descricao } }),
+    ),
+  );
+  const motivoPreco = motivos[0];
+  const motivoConcorrente = motivos[1];
+
+  // Cada lead: nicho, estágio, valores e (quando cabe) motivo de perda.
+  const leadPadaria = await prisma.leadComercial.create({
+    data: {
+      escritorioId: "escritorio-demo",
+      nomeEmpresa: "Padaria Pão Nosso",
+      nicho: "Padaria",
+      contatoNome: "Dona Marli",
+      contatoCargo: "Proprietária",
+      telefone: "+5511988887777",
+      cidade: "São Paulo",
+      uf: "SP",
+      endereco: "Rua das Flores, 120",
+      estagio: EstagioLead.EM_NEGOCIACAO,
+      origem: OrigemLead.PROSPECCAO_ATIVA,
+      valorPotencialCentavos: 350_000,
+      responsavelId,
+    },
+  });
+
+  const leadOficina = await prisma.leadComercial.create({
+    data: {
+      escritorioId: "escritorio-demo",
+      nomeEmpresa: "Oficina TurboMax",
+      nicho: "Oficina mecânica",
+      contatoNome: "Seu Jorge",
+      telefone: "+5511977776666",
+      cidade: "Guarulhos",
+      uf: "SP",
+      estagio: EstagioLead.GANHO,
+      origem: OrigemLead.INDICACAO,
+      valorPotencialCentavos: 500_000,
+      valorFechadoCentavos: 480_000,
+      ganhoEm: diaRelativoSaoPaulo(-3),
+      responsavelId,
+    },
+  });
+
+  const leadClinica = await prisma.leadComercial.create({
+    data: {
+      escritorioId: "escritorio-demo",
+      nomeEmpresa: "Clínica Vida Plena",
+      nicho: "Clínica",
+      contatoNome: "Dra. Helena",
+      cidade: "Campinas",
+      uf: "SP",
+      estagio: EstagioLead.PERDIDO,
+      origem: OrigemLead.EVENTO,
+      valorPotencialCentavos: 800_000,
+      perdidoEm: diaRelativoSaoPaulo(-5),
+      motivoPerdaId: motivoPreco?.id ?? null,
+      detalhePerda: "Achou o valor mensal alto para o momento.",
+      responsavelId,
+    },
+  });
+
+  await prisma.leadComercial.create({
+    data: {
+      escritorioId: "escritorio-demo",
+      nomeEmpresa: "Mercadinho do Bairro",
+      nicho: "Mercado",
+      cidade: "São Paulo",
+      uf: "SP",
+      estagio: EstagioLead.PROSPECCAO,
+      origem: OrigemLead.PROSPECCAO_ATIVA,
+      valorPotencialCentavos: 250_000,
+      responsavelId,
+    },
+  });
+
+  await prisma.leadComercial.create({
+    data: {
+      escritorioId: "escritorio-demo",
+      nomeEmpresa: "Barbearia Navalha de Ouro",
+      nicho: "Barbearia",
+      cidade: "Osasco",
+      uf: "SP",
+      estagio: EstagioLead.PROPOSTA_ENVIADA,
+      origem: OrigemLead.REDE_SOCIAL,
+      valorPotencialCentavos: 180_000,
+      responsavelId,
+    },
+  });
+
+  await prisma.leadComercial.create({
+    data: {
+      escritorioId: "escritorio-demo",
+      nomeEmpresa: "Auto Peças Veloz",
+      nicho: "Oficina mecânica",
+      cidade: "Santo André",
+      uf: "SP",
+      estagio: EstagioLead.PERDIDO,
+      origem: OrigemLead.SITE,
+      valorPotencialCentavos: 300_000,
+      perdidoEm: diaRelativoSaoPaulo(-8),
+      motivoPerdaId: motivoConcorrente?.id ?? null,
+      responsavelId,
+    },
+  });
+
+  // Visitas — algumas nos últimos dias, para o gráfico de visitas por dia.
+  await prisma.visitaComercial.createMany({
+    data: [
+      {
+        leadId: leadPadaria.id,
+        dataVisita: diaRelativoSaoPaulo(-1),
+        local: "Rua das Flores, 120",
+        resultado: ResultadoVisita.REALIZADA,
+        anotacoes: "Gostou da demonstração, pediu proposta.",
+        registradoPorId: responsavelId,
+      },
+      {
+        leadId: leadOficina.id,
+        dataVisita: diaRelativoSaoPaulo(-4),
+        local: "Av. Brasil, 800",
+        resultado: ResultadoVisita.REALIZADA,
+        anotacoes: "Fechou na hora.",
+        registradoPorId: responsavelId,
+      },
+      {
+        leadId: leadClinica.id,
+        dataVisita: diaRelativoSaoPaulo(-6),
+        resultado: ResultadoVisita.REALIZADA,
+        anotacoes: "Demonstração feita, ficou de pensar.",
+        registradoPorId: responsavelId,
+      },
+      {
+        leadId: leadPadaria.id,
+        dataVisita: diaRelativoSaoPaulo(-1),
+        resultado: ResultadoVisita.REALIZADA,
+        registradoPorId: responsavelId,
+      },
+    ],
+  });
+
+  // Próximos passos — um vencido, um para hoje, um futuro.
+  await prisma.proximoPassoComercial.createMany({
+    data: [
+      {
+        leadId: leadPadaria.id,
+        descricao: "Enviar proposta comercial revisada",
+        dataPrevista: diaRelativoSaoPaulo(0),
+        responsavelId,
+      },
+      {
+        leadId: leadPadaria.id,
+        descricao: "Ligar para confirmar recebimento da proposta",
+        dataPrevista: diaRelativoSaoPaulo(2),
+        responsavelId,
+      },
+      {
+        leadId: leadOficina.id,
+        descricao: "Agendar treinamento da equipe",
+        dataPrevista: diaRelativoSaoPaulo(-1),
+        responsavelId,
+      },
+    ],
+  });
+
+  console.log("CRM comercial: 6 leads, 4 motivos, 4 visitas e 3 próximos passos de demonstração.");
+}
+
 async function main() {
   await seedEscritorioEUsuario();
   await seedFeriadosNacionais();
   await seedTiposAtoPrazo();
   await seedDadosDemonstracaoPainel();
+  await seedCrmComercial();
 
   // TODO(feriados estaduais/tribunal): esta seed cobre apenas o calendário
   // NACIONAL (aplicável a toda UF, tribunal = null). Feriados estaduais,

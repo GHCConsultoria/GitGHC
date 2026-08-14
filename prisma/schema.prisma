@@ -30,6 +30,9 @@ model Escritorio {
   processos  Processo[]
   modelosPeticao ModeloPeticao[]
 
+  leadsComerciais LeadComercial[]
+  motivosPerdaComercial MotivoPerdaComercial[]
+
   criadoEm  DateTime @default(now())
   atualizadoEm DateTime @updatedAt
 
@@ -64,6 +67,10 @@ model Usuario {
   tarefasConcluidas  TarefaPrazo[]  @relation("TarefaConcluidaPor")
   logsAuditoria     LogAuditoria[]
   rascunhosPeticaoGerados RascunhoPeticao[]
+
+  leadsComerciaisResponsavel   LeadComercial[]         @relation("LeadComercialResponsavel")
+  visitasComerciaisRegistradas VisitaComercial[]       @relation("VisitaComercialRegistradaPor")
+  proximosPassosResponsavel    ProximoPassoComercial[] @relation("ProximoPassoResponsavel")
 
   criadoEm     DateTime @default(now())
   atualizadoEm DateTime @updatedAt
@@ -428,4 +435,167 @@ model RascunhoPeticao {
   criadoEm DateTime @default(now())
 
   @@map("rascunhos_peticao")
+}
+
+// ---------------------------------------------------------------------------
+// CRM Comercial — prospecção e venda de sistemas em visitas presenciais
+// ---------------------------------------------------------------------------
+//
+// Módulo de gestão comercial do próprio escritório/consultoria: controla as
+// empresas visitadas (leads), o avanço de cada uma pelo funil, o histórico de
+// visitas (dia, local, resultado), os próximos passos com data e — quando não
+// dá certo — o motivo da recusa. Escopo sempre por escritorioId (mesmo tenant
+// do restante do produto). Segue os mesmos princípios do domínio: nada é
+// apagado fisicamente, só muda de status; valores em dinheiro são inteiros em
+// centavos (nunca float).
+
+// Estágios do funil, na ordem de avanço. GANHO e PERDIDO são os dois estados
+// terminais. A ordem aqui é a fonte da verdade para o gráfico de funil do BI
+// (ver src/lib/crm/funil.ts) — mudar a ordem muda a visualização.
+enum EstagioLead {
+  PROSPECCAO
+  CONTATO_FEITO
+  VISITA_AGENDADA
+  VISITA_REALIZADA
+  PROPOSTA_ENVIADA
+  EM_NEGOCIACAO
+  GANHO
+  PERDIDO
+}
+
+enum OrigemLead {
+  PROSPECCAO_ATIVA
+  INDICACAO
+  EVENTO
+  REDE_SOCIAL
+  SITE
+  OUTRO
+}
+
+// Empresa/prospect visitado. nicho é o segmento de mercado (o usuário vende
+// para vários nichos diferentes e quer fatiar o BI por eles).
+model LeadComercial {
+  id String @id @default(cuid())
+
+  escritorio   Escritorio @relation(fields: [escritorioId], references: [id])
+  escritorioId String
+
+  nomeEmpresa  String
+  nicho        String
+  contatoNome  String?
+  contatoCargo String?
+  telefone     String?
+  email        String?
+
+  cidade   String?
+  uf       String?
+  endereco String?
+
+  estagio EstagioLead @default(PROSPECCAO)
+  origem  OrigemLead  @default(PROSPECCAO_ATIVA)
+
+  // Sempre em centavos — dinheiro nunca em float. valorPotencial é a
+  // estimativa em aberto; valorFechado é preenchido só quando o lead é GANHO.
+  valorPotencialCentavos Int?
+  valorFechadoCentavos   Int?
+
+  ganhoEm   DateTime?
+  perdidoEm DateTime?
+
+  // Motivo da recusa — obrigatório ao mover para PERDIDO (ver acoes.ts).
+  // detalhePerda é o texto livre complementar ("preço", "já usa concorrente X").
+  motivoPerda   MotivoPerdaComercial? @relation(fields: [motivoPerdaId], references: [id])
+  motivoPerdaId String?
+  detalhePerda  String?
+
+  responsavel   Usuario? @relation("LeadComercialResponsavel", fields: [responsavelId], references: [id])
+  responsavelId String?
+
+  visitas        VisitaComercial[]
+  proximosPassos ProximoPassoComercial[]
+
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  @@index([escritorioId, estagio])
+  @@map("leads_comerciais")
+}
+
+// Catálogo de motivos de recusa por escritório — configurável em vez de texto
+// solto, pra o BI conseguir agrupar "por que perdemos" de forma consistente.
+// Nunca apagado (ativo=false aposenta sem quebrar leads que já o referenciam).
+model MotivoPerdaComercial {
+  id String @id @default(cuid())
+
+  escritorio   Escritorio @relation(fields: [escritorioId], references: [id])
+  escritorioId String
+
+  descricao String
+  ativo     Boolean @default(true)
+
+  leads LeadComercial[]
+
+  criadoEm DateTime @default(now())
+
+  @@unique([escritorioId, descricao])
+  @@map("motivos_perda_comercial")
+}
+
+enum ResultadoVisita {
+  REALIZADA
+  REMARCADA
+  NAO_COMPARECEU
+  CANCELADA
+}
+
+// Registro de uma visita presencial a um lead — o histórico "dia, local,
+// resultado, anotações" que o usuário pediu. Uma linha por visita, imutável.
+model VisitaComercial {
+  id String @id @default(cuid())
+
+  lead   LeadComercial @relation(fields: [leadId], references: [id])
+  leadId String
+
+  dataVisita DateTime
+  local      String?
+  resultado  ResultadoVisita @default(REALIZADA)
+  anotacoes  String?
+
+  registradoPor   Usuario? @relation("VisitaComercialRegistradaPor", fields: [registradoPorId], references: [id])
+  registradoPorId String?
+
+  criadoEm DateTime @default(now())
+
+  @@index([leadId])
+  @@map("visitas_comerciais")
+}
+
+enum StatusProximoPasso {
+  PENDENTE
+  CONCLUIDO
+  CANCELADO
+}
+
+// Próximo passo de um lead, com data prevista — alimenta a agenda comercial e
+// os alertas de follow-up vencido. Muda de status, nunca é apagado.
+model ProximoPassoComercial {
+  id String @id @default(cuid())
+
+  lead   LeadComercial @relation(fields: [leadId], references: [id])
+  leadId String
+
+  descricao    String
+  dataPrevista DateTime
+  status       StatusProximoPasso @default(PENDENTE)
+  concluidoEm  DateTime?
+
+  responsavel   Usuario? @relation("ProximoPassoResponsavel", fields: [responsavelId], references: [id])
+  responsavelId String?
+
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  @@index([leadId])
+  @@index([status, dataPrevista])
+  @@map("proximos_passos_comercial")
 }
