@@ -87,3 +87,74 @@ completo na tarefa que o originou.
 - **PWA do paciente**: cada paciente tem um manifesto próprio
   (`/p/[token]/manifest.json`), então instalar na tela inicial abre direto no link
   daquele paciente, não num app genérico.
+
+## Módulo imobiliária — SaaS de gestão (produto separado)
+
+Terceiro produto do repositório: um SaaS **multi-tenant** de gestão para imobiliárias
+(imóveis, proprietários, clientes, CRM/leads, visitas, propostas, vendas, locações,
+contratos, financeiro, comissões, relatórios). Segue o mesmo padrão de vertical isolado
+do NoSheipe: schema Prisma próprio, namespace de rotas e de domínio, reaproveitando o
+Supabase Auth e o Tailwind do repositório — sem introduzir Auth.js/shadcn/RHF.
+
+- **Rotas**: `/imob/login` (login + cadastro self-service da imobiliária), `/imob`
+  (painel protegido), `/imob/onboarding` (wizard da conta nova), `/imob/usuarios`,
+  `/imob/papeis`, `/imob/configuracoes`, `/imob/auditoria`.
+- **Código**: `src/lib/imob/*` (domínio: `rbac.ts`, `auth.ts`, `acoes.ts`, `consultas.ts`,
+  `schemas.ts`, `auditoria.ts`, `provisionamento.ts`, `navegacao.ts`) e `src/app/imob/*`
+  (rotas), com componentes em `src/components/imob/*`.
+- **Banco Postgres dedicado**: schema próprio em `prisma/imob/schema.prisma` (client
+  gerado em `prisma/imob/generated`, ver `src/lib/imob/prisma.ts`), **separado** do
+  Postgres do sistema jurídico e do Turso do NoSheipe. Variáveis `IMOB_DATABASE_URL` /
+  `IMOB_DIRECT_URL`. Setup:
+  ```bash
+  # apontar IMOB_DATABASE_URL / IMOB_DIRECT_URL no .env para um Postgres dedicado
+  npm run db:migrate:imob   # cria/aplica as migrations em dev
+  npm run db:seed:imob      # imobiliária demo + papéis padrão + equipe demo
+  ```
+  Em produção o build roda `prisma migrate deploy` + seed do imob automaticamente quando
+  `IMOB_DIRECT_URL` está setado (senão pula, sem quebrar os outros produtos).
+- **Multi-tenancy**: toda entidade de negócio tem `imobiliariaId`; o isolamento é
+  garantido **no servidor** — as funções de `src/lib/imob/consultas.ts` sempre filtram
+  por tenant, e as `acoes.ts` só operam sobre registros do tenant da sessão
+  (`obterUsuarioDoTenant`/`obterPapelDoTenant`). Nunca confiar só no front.
+- **RBAC granular**: catálogo único de permissões (`imoveis.criar`, `financeiro.ver`, …)
+  em `src/lib/imob/rbac.ts`, papéis embutidos por tenant (Administrador/Gestor/Corretor/
+  Financeiro/Assistente) e papéis customizáveis pelo admin. A autorização mora no servidor
+  (`exigirPermissao`); a navegação e os botões só refletem o que o servidor já checou.
+- **Auditoria imutável** (`imob_logs_auditoria`): toda criação/edição relevante grava
+  antes/depois em JSON, dentro da mesma transação da mudança. Sem exclusão física —
+  usuário/papel mudam de status, não somem.
+- **Auth**: mesmo Supabase Auth (GoTrue) dos outros produtos; `UsuarioImob.authUserId`
+  aponta pro mesmo `auth.users`. Cadastro self-service cria tenant + papéis padrão +
+  primeiro Administrador numa transação, com rollback do usuário Auth se algo falhar.
+- **Status — Fases 1 a 6 concluídas.**
+  - Fase 1: arquitetura, banco, autenticação, multi-tenancy, usuários, papéis/permissões,
+    onboarding e auditoria.
+  - Fase 2: imóveis (CRUD completo com fotos, filtros, busca e paginação), proprietários,
+    clientes (com preferências de busca) e dashboard com KPIs reais. Valores monetários em
+    centavos; fotos por URL via abstração de storage (`src/lib/imob/storage.ts`), pronta
+    para upload de binário no Supabase Storage.
+  - Fase 3: CRM de leads com Kanban por etapa e registro de interações; corretores (com
+    metas e comissão); captação de imóveis; visitas (agendamento + registro de resultado);
+    tarefas (com prioridade e conclusão); agenda agregada (visitas + tarefas + follow-ups);
+    e **matching cliente×imóvel** — função pura (`src/lib/imob/matching.ts`) que pontua a
+    compatibilidade 0–100 pelas preferências do cliente. Seed com 4 corretores, 20 leads,
+    10 visitas, 10 tarefas e 6 captações.
+  - Fase 4: propostas (com histórico de status), vendas (fecham o imóvel como vendido),
+    locações (aluguel/encargos/reajuste) e contratos com documentos e **alertas de
+    vencimento** (função pura `src/lib/imob/alertas.ts`, faixas 30/15/7/1 dias). Dashboard
+    ganhou KPIs financeiros (vendido no mês, locações ativas, propostas abertas, contratos
+    vencendo). Seed com 10 propostas, 8 vendas, 8 locações e 8 contratos.
+  - Fase 5: financeiro (contas a pagar/receber com marcação de pago), **fluxo de caixa**
+    consolidado (regime de caixa, entradas × saídas por mês — função pura
+    `src/lib/imob/fluxo.ts`) e **comissões** com fluxo prevista→aprovada→paga e geração
+    automática a partir de uma venda (distribuição por papel em centavos exatos, método do
+    maior resto — `src/lib/imob/comissao.ts`). Seed com 12 lançamentos e comissões.
+  - Fase 6: central de **documentos** (por URL, vinculáveis a cliente/proprietário/imóvel/
+    contrato), **notificações** internas geradas por eventos (novo lead, venda, proposta
+    aceita), **relatórios** com exportação **CSV** (função pura `src/lib/imob/csv.ts`,
+    endpoint `/imob/relatorios-csv`) e **busca global** respeitando o RBAC. Seed com
+    documentos e notificações de exemplo.
+  - Produto completo em relação ao escopo inicial. Evoluções futuras: upload binário de
+    mídia/documentos no Supabase Storage (abstração já pronta), notificações por
+    e-mail/WhatsApp/push, exportação Excel/PDF e testes E2E.

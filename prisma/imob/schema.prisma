@@ -1,0 +1,1047 @@
+// Schema do produto imobiliário (vertical "imob") — banco Postgres próprio,
+// separado do Postgres do sistema jurídico em ../schema.prisma e do
+// Turso/libSQL do NoSheipe em ../nutri/schema.prisma. Os três produtos vivem
+// no mesmo repositório mas não compartilham banco nem client Prisma; ver
+// src/lib/imob/prisma.ts. Isolamento multi-tenant é por `imobiliariaId` em
+// toda entidade de negócio — nunca confie só no front, o filtro por tenant
+// mora nas consultas do servidor (src/lib/imob/consultas.ts).
+//
+// Fase 1 (esta): tenant + usuários + papéis/RBAC + auditoria. As demais
+// entidades (imóveis, leads, propostas, financeiro, ...) entram em migrations
+// aditivas nas próximas fases.
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "./generated"
+}
+
+datasource db {
+  provider  = "postgresql"
+  // Banco DEDICADO do produto imobiliário (não é o mesmo do Zelo). Pode ser
+  // outro projeto Supabase ou outro database no mesmo servidor. Pooled
+  // (pgbouncer, 6543) em runtime.
+  url       = env("IMOB_DATABASE_URL")
+  // Conexão direta (5432) só para migrations/DDL. Ver ../schema.prisma para
+  // o porquê de o pooler não servir migration.
+  directUrl = env("IMOB_DIRECT_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Tenant
+// ---------------------------------------------------------------------------
+
+model Imobiliaria {
+  id       String  @id @default(cuid())
+  nome     String
+  cnpj     String?
+  creci    String?
+  email    String?
+  telefone String?
+
+  // Endereço da imobiliária (não confundir com endereço de imóvel, que vem
+  // em fase futura no model Imovel).
+  cep         String?
+  logradouro  String?
+  numero      String?
+  complemento String?
+  bairro      String?
+  cidade      String?
+  estado      String?
+
+  // Identidade visual configurável (Configurações da imobiliária).
+  logoUrl     String?
+  corPrimaria String  @default("#2563EB")
+
+  // Onboarding: `onboardingEtapa` é o índice da última etapa concluída do
+  // wizard (ver src/lib/imob/onboarding.ts); `onboardingConcluido` trava o
+  // wizard depois de finalizado.
+  onboardingConcluido Boolean @default(false)
+  onboardingEtapa     Int     @default(0)
+
+  usuarios       UsuarioImob[]
+  papeis         Papel[]
+  logsAuditoria  LogAuditoriaImob[]
+  imoveis        Imovel[]
+  proprietarios  Proprietario[]
+  clientes       Cliente[]
+  corretores     Corretor[]
+  leads          Lead[]
+  visitas        Visita[]
+  tarefas        Tarefa[]
+  captacoes      Captacao[]
+  propostas      Proposta[]
+  vendas         Venda[]
+  locacoes       Locacao[]
+  contratos      Contrato[]
+  lancamentos    LancamentoFinanceiro[]
+  comissoes      Comissao[]
+  regrasComissao RegraComissao[]
+  documentos     Documento[]
+  notificacoes   Notificacao[]
+
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  @@map("imob_imobiliarias")
+}
+
+// ---------------------------------------------------------------------------
+// Papel (RBAC) — permissões granulares por string, catálogo em
+// src/lib/imob/rbac.ts. Papéis com `sistema=true` são os embutidos
+// (Administrador/Gestor/Corretor/Financeiro/Assistente), semeados por tenant
+// e não removíveis; o admin pode criar papéis próprios com qualquer
+// combinação de permissões do catálogo.
+// ---------------------------------------------------------------------------
+
+model Papel {
+  id        String  @id @default(cuid())
+  nome      String
+  descricao String?
+  sistema   Boolean @default(false)
+
+  // Lista de chaves de permissão (ex.: "imoveis.criar"). Array nativo do
+  // Postgres — granular e barato de checar, sem tabela de junção.
+  permissoes String[]
+
+  imobiliaria   Imobiliaria @relation(fields: [imobiliariaId], references: [id], onDelete: Cascade)
+  imobiliariaId String
+
+  usuarios UsuarioImob[]
+
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  // nome único por tenant, não globalmente
+  @@unique([imobiliariaId, nome])
+  @@index([imobiliariaId])
+  @@map("imob_papeis")
+}
+
+// ---------------------------------------------------------------------------
+// Usuário
+// ---------------------------------------------------------------------------
+
+enum StatusUsuarioImob {
+  ATIVO
+  INATIVO
+}
+
+model UsuarioImob {
+  id String @id @default(cuid())
+
+  // id do usuário no Supabase Auth (auth.users.id) — o Supabase é o serviço
+  // de identidade/sessão (GoTrue), igual aos outros verticais; os dados de
+  // negócio vivem aqui.
+  authUserId String @unique
+
+  nome     String
+  email    String
+  telefone String?
+
+  status         StatusUsuarioImob @default(ATIVO)
+  // Último login registrado (atualizado no fluxo de sessão) — requisito de
+  // "registro de último acesso".
+  ultimoAcessoEm DateTime?
+
+  imobiliaria   Imobiliaria @relation(fields: [imobiliariaId], references: [id], onDelete: Cascade)
+  imobiliariaId String
+
+  papel   Papel  @relation(fields: [papelId], references: [id])
+  papelId String
+
+  logsAuditoria LogAuditoriaImob[]
+
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  // e-mail único por tenant (a mesma pessoa pode existir em imobiliárias
+  // diferentes; dentro de uma, não duplica)
+  @@unique([imobiliariaId, email])
+  @@index([imobiliariaId])
+  @@index([papelId])
+  @@map("imob_usuarios")
+}
+
+// ---------------------------------------------------------------------------
+// Auditoria imutável — uma linha por ação relevante, nunca sobrescrita nem
+// apagada. `valorAnterior`/`valorNovo` guardam o antes/depois em JSON.
+// ---------------------------------------------------------------------------
+
+model LogAuditoriaImob {
+  id String @id @default(cuid())
+
+  imobiliaria   Imobiliaria @relation(fields: [imobiliariaId], references: [id], onDelete: Cascade)
+  imobiliariaId String
+
+  // null quando a ação é do sistema (ex.: seed/onboarding antes de haver
+  // usuário) — mantém o log válido mesmo sem autor humano.
+  usuario   UsuarioImob? @relation(fields: [usuarioId], references: [id])
+  usuarioId String?
+
+  entidade      String
+  entidadeId    String
+  acao          String
+  valorAnterior Json?
+  valorNovo     Json?
+  ip            String?
+
+  criadoEm DateTime @default(now())
+
+  @@index([imobiliariaId, entidade, entidadeId])
+  @@index([imobiliariaId, criadoEm])
+  @@map("imob_logs_auditoria")
+}
+
+// ===========================================================================
+// FASE 2 — Imóveis, Proprietários, Clientes
+// ===========================================================================
+//
+// Convenções desta fase:
+// - Valores monetários em CENTAVOS (Int) — evita erro de ponto flutuante em
+//   dinheiro. A UI formata para reais.
+// - Sem exclusão física: Proprietario/Cliente têm `ativo` (arquivar em vez de
+//   apagar); Imovel usa StatusImovel.INATIVO. Toda mudança é auditada.
+// - Áreas em m² (Float, aceitam fração).
+
+enum TipoImovel {
+  CASA
+  APARTAMENTO
+  TERRENO
+  SALA_COMERCIAL
+  LOJA
+  GALPAO
+  FAZENDA
+  CHACARA
+  SITIO
+  PREDIO
+  OUTROS
+}
+
+enum FinalidadeImovel {
+  VENDA
+  LOCACAO
+  VENDA_LOCACAO
+}
+
+enum StatusImovel {
+  DISPONIVEL
+  RESERVADO
+  EM_NEGOCIACAO
+  VENDIDO
+  ALUGADO
+  INATIVO
+}
+
+enum TipoPessoa {
+  FISICA
+  JURIDICA
+}
+
+enum TipoCliente {
+  COMPRADOR
+  LOCATARIO
+  INVESTIDOR
+  PROPRIETARIO
+  INTERESSADO
+}
+
+model Proprietario {
+  id String @id @default(cuid())
+
+  imobiliaria   Imobiliaria @relation(fields: [imobiliariaId], references: [id], onDelete: Cascade)
+  imobiliariaId String
+
+  nome        String
+  tipoPessoa  TipoPessoa @default(FISICA)
+  documento   String? // CPF ou CNPJ, apenas dígitos
+  email       String?
+  telefone    String?
+  whatsapp    String?
+  endereco    String?
+  observacoes String?
+
+  ativo Boolean @default(true)
+
+  imoveis ImovelProprietario[]
+
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  @@index([imobiliariaId])
+  @@index([imobiliariaId, ativo])
+  @@map("imob_proprietarios")
+}
+
+model Cliente {
+  id String @id @default(cuid())
+
+  imobiliaria   Imobiliaria @relation(fields: [imobiliariaId], references: [id], onDelete: Cascade)
+  imobiliariaId String
+
+  nome           String
+  tipo           TipoCliente @default(INTERESSADO)
+  tipoPessoa     TipoPessoa  @default(FISICA)
+  documento      String?
+  email          String?
+  telefone       String?
+  whatsapp       String?
+  dataNascimento DateTime?
+  profissao      String?
+  estadoCivil    String?
+  endereco       String?
+  observacoes    String?
+
+  ativo Boolean @default(true)
+
+  // Preferências imobiliárias (perfil de busca) — usadas no matching
+  // cliente×imóvel (fase futura). Valores monetários em centavos.
+  prefTipoImovel TipoImovel?
+  prefFinalidade FinalidadeImovel?
+  prefValorMin   Int?
+  prefValorMax   Int?
+  prefCidade     String?
+  prefBairro     String?
+  prefQuartos    Int?
+  prefSuites     Int?
+  prefVagas      Int?
+  prefAreaMinima Float?
+
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  @@index([imobiliariaId])
+  @@index([imobiliariaId, ativo])
+  @@index([imobiliariaId, tipo])
+  @@map("imob_clientes")
+}
+
+model Imovel {
+  id String @id @default(cuid())
+
+  imobiliaria   Imobiliaria @relation(fields: [imobiliariaId], references: [id], onDelete: Cascade)
+  imobiliariaId String
+
+  // Código interno legível, único por imobiliária (não global).
+  codigo    String
+  titulo    String
+  descricao String?
+
+  tipo       TipoImovel
+  finalidade FinalidadeImovel
+  status     StatusImovel     @default(DISPONIVEL)
+
+  // Valores em centavos.
+  precoVenda   Int?
+  precoAluguel Int?
+  condominio   Int?
+  iptu         Int?
+
+  areaTotal      Float?
+  areaConstruida Float?
+  quartos        Int?
+  suites         Int?
+  banheiros      Int?
+  vagas          Int?
+  andar          Int?
+  anoConstrucao  Int?
+
+  aceitaFinanciamento Boolean @default(false)
+  aceitaPermuta       Boolean @default(false)
+  mobiliado           Boolean @default(false)
+
+  // Amenidades/características livres (ex.: "piscina", "churrasqueira").
+  caracteristicas String[]
+
+  // Endereço do imóvel.
+  cep         String?
+  logradouro  String?
+  numero      String?
+  complemento String?
+  bairro      String?
+  cidade      String?
+  estado      String?
+  latitude    Float?
+  longitude   Float?
+
+  tourVirtualUrl String?
+
+  // Quem cadastrou (id do UsuarioImob) — scalar simples, sem FK, para
+  // auditoria leve sem acoplar a relação.
+  criadoPorId String?
+
+  proprietarios ImovelProprietario[]
+  fotos         FotoImovel[]
+
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  @@unique([imobiliariaId, codigo])
+  @@index([imobiliariaId, status])
+  @@index([imobiliariaId, tipo])
+  @@index([imobiliariaId, finalidade])
+  @@index([imobiliariaId, cidade])
+  @@map("imob_imoveis")
+}
+
+// Vínculo N:N imóvel↔proprietário (um imóvel pode ter vários donos, um dono
+// vários imóveis).
+model ImovelProprietario {
+  id String @id @default(cuid())
+
+  imovel   Imovel @relation(fields: [imovelId], references: [id], onDelete: Cascade)
+  imovelId String
+
+  proprietario   Proprietario @relation(fields: [proprietarioId], references: [id], onDelete: Cascade)
+  proprietarioId String
+
+  criadoEm DateTime @default(now())
+
+  @@unique([imovelId, proprietarioId])
+  @@index([proprietarioId])
+  @@map("imob_imovel_proprietarios")
+}
+
+model FotoImovel {
+  id String @id @default(cuid())
+
+  imovel   Imovel @relation(fields: [imovelId], references: [id], onDelete: Cascade)
+  imovelId String
+
+  // URL da imagem (storage externo — ver src/lib/imob/storage.ts). Guardamos
+  // a URL, não o binário.
+  url       String
+  legenda   String?
+  ordem     Int     @default(0)
+  principal Boolean @default(false)
+
+  criadoEm DateTime @default(now())
+
+  @@index([imovelId])
+  @@map("imob_fotos_imovel")
+}
+
+// ===========================================================================
+// FASE 3 — CRM/Leads, Corretores, Visitas, Tarefas, Captação
+// ===========================================================================
+//
+// Referências a Imovel/Cliente/Proprietario são por id escalar (sem FK) para
+// não acoplar toda a malha de relações; a camada de consulta resolve os nomes
+// em lote. Só Corretor tem relações declaradas (é entidade nova e central no
+// CRM). Sem exclusão física: Corretor tem `ativo`; Lead/Visita/Captacao/Tarefa
+// mudam de etapa/status. Toda alteração relevante é auditada.
+
+model Corretor {
+  id String @id @default(cuid())
+
+  imobiliaria   Imobiliaria @relation(fields: [imobiliariaId], references: [id], onDelete: Cascade)
+  imobiliariaId String
+
+  nome     String
+  cpf      String?
+  creci    String?
+  email    String?
+  telefone String?
+  whatsapp String?
+
+  dataEntrada        DateTime?
+  ativo              Boolean   @default(true)
+  metaMensal         Int? // centavos
+  percentualComissao Float? // ex.: 5 = 5%
+
+  // Vínculo opcional ao usuário do sistema (um corretor pode ou não ter login).
+  usuarioId String?
+
+  leads     Lead[]
+  visitas   Visita[]
+  captacoes Captacao[]
+
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  @@index([imobiliariaId, ativo])
+  @@map("imob_corretores")
+}
+
+enum OrigemLead {
+  SITE
+  INSTAGRAM
+  FACEBOOK
+  WHATSAPP
+  PORTAL
+  INDICACAO
+  GOOGLE
+  TELEFONE
+  PRESENCIAL
+  OUTROS
+}
+
+enum EtapaLead {
+  NOVO
+  CONTATO_REALIZADO
+  QUALIFICACAO
+  VISITA_AGENDADA
+  VISITA_REALIZADA
+  PROPOSTA
+  NEGOCIACAO
+  FECHADO
+  PERDIDO
+}
+
+model Lead {
+  id String @id @default(cuid())
+
+  imobiliaria   Imobiliaria @relation(fields: [imobiliariaId], references: [id], onDelete: Cascade)
+  imobiliariaId String
+
+  nome            String
+  telefone        String?
+  whatsapp        String?
+  email           String?
+  origem          OrigemLead @default(OUTROS)
+  etapa           EtapaLead  @default(NOVO)
+  valorPretendido Int? // centavos
+  observacoes     String?
+  ultimoContato   DateTime?
+  proximaAcao     DateTime?
+
+  // ordenação dentro da coluna do Kanban
+  ordem Int @default(0)
+
+  corretor   Corretor? @relation(fields: [corretorId], references: [id])
+  corretorId String?
+
+  // referências escalares (resolvidas em lote na consulta)
+  imovelId  String?
+  clienteId String?
+
+  interacoes InteracaoLead[]
+
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  @@index([imobiliariaId, etapa])
+  @@index([corretorId])
+  @@map("imob_leads")
+}
+
+model InteracaoLead {
+  id String @id @default(cuid())
+
+  lead   Lead   @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  leadId String
+
+  tipo        String // ex.: "LIGACAO", "WHATSAPP", "EMAIL", "NOTA"
+  descricao   String
+  criadoPorId String?
+
+  criadoEm DateTime @default(now())
+
+  @@index([leadId])
+  @@map("imob_interacoes_lead")
+}
+
+enum StatusVisita {
+  AGENDADA
+  CONFIRMADA
+  REALIZADA
+  CANCELADA
+  NAO_COMPARECEU
+}
+
+model Visita {
+  id String @id @default(cuid())
+
+  imobiliaria   Imobiliaria @relation(fields: [imobiliariaId], references: [id], onDelete: Cascade)
+  imobiliariaId String
+
+  imovelId  String
+  clienteId String?
+  leadId    String?
+
+  corretor   Corretor? @relation(fields: [corretorId], references: [id])
+  corretorId String?
+
+  data        DateTime
+  duracaoMin  Int          @default(30)
+  status      StatusVisita @default(AGENDADA)
+  observacoes String?
+
+  // pós-visita (preenchido ao registrar o resultado)
+  interesse    String? // "ALTO" | "MEDIO" | "BAIXO"
+  nota         Int? // 0..10
+  feedback     String?
+  proximoPasso String?
+
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  @@index([imobiliariaId, data])
+  @@index([imobiliariaId, status])
+  @@map("imob_visitas")
+}
+
+enum PrioridadeTarefa {
+  BAIXA
+  MEDIA
+  ALTA
+  URGENTE
+}
+
+enum StatusTarefaImob {
+  PENDENTE
+  CONCLUIDA
+}
+
+model Tarefa {
+  id String @id @default(cuid())
+
+  imobiliaria   Imobiliaria @relation(fields: [imobiliariaId], references: [id], onDelete: Cascade)
+  imobiliariaId String
+
+  titulo     String
+  descricao  String?
+  prioridade PrioridadeTarefa @default(MEDIA)
+  prazo      DateTime?
+  status     StatusTarefaImob @default(PENDENTE)
+
+  responsavelId String? // UsuarioImob
+  clienteId     String?
+  imovelId      String?
+  leadId        String?
+
+  concluidoEm DateTime?
+
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  @@index([imobiliariaId, status])
+  @@index([imobiliariaId, prazo])
+  @@map("imob_tarefas")
+}
+
+enum StatusCaptacao {
+  PROSPECTADO
+  CONTATO_REALIZADO
+  VISITA_CAPTACAO
+  DOCUMENTACAO
+  CONTRATO
+  ATIVO
+  ENCERRADO
+}
+
+model Captacao {
+  id String @id @default(cuid())
+
+  imobiliaria   Imobiliaria @relation(fields: [imobiliariaId], references: [id], onDelete: Cascade)
+  imobiliariaId String
+
+  proprietarioId String?
+  imovelId       String?
+
+  corretor   Corretor? @relation(fields: [corretorId], references: [id])
+  corretorId String?
+
+  dataCaptacao          DateTime?
+  origem                String?
+  exclusividade         Boolean        @default(false)
+  comissaoPercentual    Float?
+  validadeExclusividade DateTime?
+  status                StatusCaptacao @default(PROSPECTADO)
+  observacoes           String?
+
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  @@index([imobiliariaId, status])
+  @@map("imob_captacoes")
+}
+
+// ===========================================================================
+// FASE 4 — Propostas, Vendas, Locações, Contratos
+// ===========================================================================
+//
+// Referências a imóvel/cliente/proprietário/corretor por id escalar (mesmo
+// padrão da Fase 3), resolvidas em lote na consulta. Valores em centavos.
+// Sem exclusão física: Proposta/Locacao/Contrato mudam de status; Venda é um
+// registro imutável (o "estorno" seria uma ação futura, não um delete).
+
+enum StatusProposta {
+  RASCUNHO
+  ENVIADA
+  EM_ANALISE
+  ACEITA
+  RECUSADA
+  EXPIRADA
+  CANCELADA
+}
+
+model Proposta {
+  id String @id @default(cuid())
+
+  imobiliaria   Imobiliaria @relation(fields: [imobiliariaId], references: [id], onDelete: Cascade)
+  imobiliariaId String
+
+  imovelId   String
+  clienteId  String?
+  corretorId String?
+
+  valorSolicitado Int? // preço anunciado (centavos)
+  valorProposto   Int // valor da proposta (centavos)
+  formaPagamento  String?
+  entrada         Int? // centavos
+  financiamento   Boolean @default(false)
+  permuta         Boolean @default(false)
+  observacoes     String?
+
+  data     DateTime  @default(now())
+  validade DateTime?
+
+  status StatusProposta @default(RASCUNHO)
+
+  historico PropostaHistorico[]
+
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  @@index([imobiliariaId, status])
+  @@index([imobiliariaId, imovelId])
+  @@map("imob_propostas")
+}
+
+// Trilha de alterações da proposta (mudanças de status/valor) — nunca
+// sobrescrita, mesmo princípio de auditoria do domínio.
+model PropostaHistorico {
+  id String @id @default(cuid())
+
+  proposta   Proposta @relation(fields: [propostaId], references: [id], onDelete: Cascade)
+  propostaId String
+
+  statusAnterior String?
+  statusNovo     String
+  observacao     String?
+  autorId        String?
+
+  criadoEm DateTime @default(now())
+
+  @@index([propostaId])
+  @@map("imob_propostas_historico")
+}
+
+model Venda {
+  id String @id @default(cuid())
+
+  imobiliaria   Imobiliaria @relation(fields: [imobiliariaId], references: [id], onDelete: Cascade)
+  imobiliariaId String
+
+  imovelId       String
+  clienteId      String?
+  proprietarioId String?
+  corretorId     String?
+  propostaId     String? // origem opcional
+
+  valorVenda     Int // centavos
+  data           DateTime @default(now())
+  formaPagamento String?
+  financiamento  Boolean  @default(false)
+  comissaoValor  Int? // centavos — comissão total apurada (Fase 5 detalha)
+  observacoes    String?
+
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  @@index([imobiliariaId, data])
+  @@map("imob_vendas")
+}
+
+enum StatusLocacao {
+  ATIVO
+  ENCERRADO
+  RESCINDIDO
+  INADIMPLENTE
+}
+
+model Locacao {
+  id String @id @default(cuid())
+
+  imobiliaria   Imobiliaria @relation(fields: [imobiliariaId], references: [id], onDelete: Cascade)
+  imobiliariaId String
+
+  imovelId       String
+  proprietarioId String?
+  locatarioId    String? // Cliente
+  corretorId     String?
+  fiadorNome     String?
+
+  valorAluguel Int // centavos
+  condominio   Int?
+  iptu         Int?
+  seguro       Int?
+  caucao       Int?
+
+  dataInicial    DateTime
+  dataFinal      DateTime?
+  diaVencimento  Int? // dia do mês (1..31)
+  indiceReajuste String? // ex.: "IGPM", "IPCA"
+
+  status StatusLocacao @default(ATIVO)
+
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  @@index([imobiliariaId, status])
+  @@map("imob_locacoes")
+}
+
+enum TipoContrato {
+  ADMINISTRACAO
+  LOCACAO
+  COMPRA_VENDA
+  CAPTACAO
+  PRESTACAO_SERVICOS
+}
+
+enum StatusContrato {
+  ATIVO
+  ENCERRADO
+  CANCELADO
+}
+
+model Contrato {
+  id String @id @default(cuid())
+
+  imobiliaria   Imobiliaria @relation(fields: [imobiliariaId], references: [id], onDelete: Cascade)
+  imobiliariaId String
+
+  titulo String
+  tipo   TipoContrato
+
+  imovelId       String?
+  clienteId      String?
+  proprietarioId String?
+
+  dataInicio  DateTime?
+  dataFim     DateTime? // usada para os alertas de vencimento (30/15/7/1 dias)
+  status      StatusContrato @default(ATIVO)
+  observacoes String?
+
+  documentos ContratoDocumento[]
+
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  @@index([imobiliariaId, status])
+  @@index([imobiliariaId, dataFim])
+  @@map("imob_contratos")
+}
+
+model ContratoDocumento {
+  id String @id @default(cuid())
+
+  contrato   Contrato @relation(fields: [contratoId], references: [id], onDelete: Cascade)
+  contratoId String
+
+  nome String
+  url  String // storage externo (ver src/lib/imob/storage.ts)
+
+  criadoEm DateTime @default(now())
+
+  @@index([contratoId])
+  @@map("imob_contratos_documentos")
+}
+
+// ===========================================================================
+// FASE 5 — Financeiro (contas a pagar/receber) e Comissões
+// ===========================================================================
+//
+// Valores em centavos. Referências a outras entidades por id escalar,
+// resolvidas em lote (resolvedores.ts). Sem exclusão física: lançamentos e
+// comissões mudam de status. `status` de lançamento é derivado no domínio a
+// partir de vencimento/pagamento, mas persistido para consulta/filtro.
+
+enum TipoLancamento {
+  RECEBER
+  PAGAR
+}
+
+enum StatusLancamento {
+  PENDENTE
+  PAGO
+  CANCELADO
+}
+
+model LancamentoFinanceiro {
+  id String @id @default(cuid())
+
+  imobiliaria   Imobiliaria @relation(fields: [imobiliariaId], references: [id], onDelete: Cascade)
+  imobiliariaId String
+
+  tipo      TipoLancamento
+  descricao String
+  categoria String?
+  valor     Int // centavos
+
+  vencimento  DateTime
+  pagamentoEm DateTime?
+  status      StatusLancamento @default(PENDENTE)
+
+  formaPagamento String?
+  centroCusto    String?
+
+  // vínculos opcionais (id escalar)
+  clienteId  String?
+  imovelId   String?
+  contratoId String?
+  corretorId String?
+
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  @@index([imobiliariaId, tipo, status])
+  @@index([imobiliariaId, vencimento])
+  @@map("imob_lancamentos")
+}
+
+enum TipoComissao {
+  CORRETOR_VENDEDOR
+  CORRETOR_CAPTADOR
+  GERENTE
+  IMOBILIARIA
+}
+
+enum StatusComissao {
+  PREVISTA
+  APROVADA
+  PAGA
+  CANCELADA
+}
+
+model Comissao {
+  id String @id @default(cuid())
+
+  imobiliaria   Imobiliaria @relation(fields: [imobiliariaId], references: [id], onDelete: Cascade)
+  imobiliariaId String
+
+  vendaId    String?
+  locacaoId  String?
+  corretorId String?
+
+  tipo       TipoComissao
+  descricao  String?
+  percentual Float? // % sobre o valor base, quando aplicável
+
+  valorPrevisto Int // centavos
+  valorAprovado Int?
+  valorPago     Int?
+
+  status StatusComissao @default(PREVISTA)
+  pagoEm DateTime?
+
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  @@index([imobiliariaId, status])
+  @@index([imobiliariaId, vendaId])
+  @@map("imob_comissoes")
+}
+
+// Regra de comissão configurável por imobiliária. `percentualTotal` é a
+// comissão sobre o valor da venda; os `pct*` distribuem esse total entre os
+// papéis e devem somar 100 (validado no domínio). Ao registrar uma venda,
+// pode-se aplicar a regra ativa para gerar as Comissões automaticamente.
+model RegraComissao {
+  id String @id @default(cuid())
+
+  imobiliaria   Imobiliaria @relation(fields: [imobiliariaId], references: [id], onDelete: Cascade)
+  imobiliariaId String
+
+  nome            String
+  percentualTotal Float
+
+  pctCorretorVendedor Float @default(50)
+  pctCorretorCaptador Float @default(0)
+  pctGerente          Float @default(0)
+  pctImobiliaria      Float @default(50)
+
+  ativo Boolean @default(true)
+
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  @@index([imobiliariaId, ativo])
+  @@map("imob_regras_comissao")
+}
+
+// ===========================================================================
+// FASE 6 — Documentos (central), Notificações
+// ===========================================================================
+
+enum TipoDocumento {
+  RG
+  CPF
+  COMPROVANTE_ENDERECO
+  MATRICULA
+  CONTRATO
+  CERTIDAO
+  COMPROVANTE_RENDA
+  OUTROS
+}
+
+// Central de documentos: guarda a URL (storage externo, ver storage.ts) e
+// vincula opcionalmente a cliente/proprietário/imóvel/contrato por id escalar.
+model Documento {
+  id String @id @default(cuid())
+
+  imobiliaria   Imobiliaria @relation(fields: [imobiliariaId], references: [id], onDelete: Cascade)
+  imobiliariaId String
+
+  nome     String
+  tipo     TipoDocumento @default(OUTROS)
+  url      String
+  validade DateTime?
+
+  clienteId      String?
+  proprietarioId String?
+  imovelId       String?
+  contratoId     String?
+
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  @@index([imobiliariaId, tipo])
+  @@map("imob_documentos")
+}
+
+enum TipoNotificacao {
+  LEAD
+  PROPOSTA
+  VENDA
+  VISITA
+  CONTRATO
+  FINANCEIRO
+  TAREFA
+  SISTEMA
+}
+
+// Notificação interna, no nível do tenant (visível a toda a imobiliária).
+// Gerada por eventos do domínio (ver notificar() em src/lib/imob/
+// notificacoes.ts). `lida` é compartilhada — MVP de central de avisos.
+model Notificacao {
+  id String @id @default(cuid())
+
+  imobiliaria   Imobiliaria @relation(fields: [imobiliariaId], references: [id], onDelete: Cascade)
+  imobiliariaId String
+
+  tipo     TipoNotificacao
+  titulo   String
+  mensagem String
+  link     String?
+
+  lida   Boolean   @default(false)
+  lidaEm DateTime?
+
+  criadoEm DateTime @default(now())
+
+  @@index([imobiliariaId, lida])
+  @@index([imobiliariaId, criadoEm])
+  @@map("imob_notificacoes")
+}
