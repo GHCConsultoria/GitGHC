@@ -127,8 +127,14 @@ Supabase Auth e o Tailwind do repositório — sem introduzir Auth.js/shadcn/RHF
 - **Auth**: mesmo Supabase Auth (GoTrue) dos outros produtos; `UsuarioImob.authUserId`
   aponta pro mesmo `auth.users`. Cadastro self-service cria tenant + papéis padrão +
   primeiro Administrador numa transação, com rollback do usuário Auth se algo falhar.
-- **Status — Fase 1 concluída**: arquitetura, banco, autenticação, multi-tenancy,
-  usuários, papéis/permissões, onboarding e auditoria. Próximas fases (cada uma com
-  banco, validação e autorização reais): imóveis/proprietários/clientes → CRM/leads/
-  visitas/agenda/tarefas → propostas/vendas/locações/contratos → financeiro/comissões →
-  documentos/notificações/relatórios.
+- **Status — Fases 1 e 2 concluídas.**
+  - Fase 1: arquitetura, banco, autenticação, multi-tenancy, usuários, papéis/permissões,
+    onboarding e auditoria.
+  - Fase 2: imóveis (CRUD completo com fotos, filtros, busca e paginação), proprietários,
+    clientes (com preferências de busca) e dashboard com KPIs reais. Valores monetários em
+    centavos; fotos por URL via abstração de storage (`src/lib/imob/storage.ts`), pronta
+    para upload de binário no Supabase Storage. Seed com 15 proprietários, 20 clientes e
+    30 imóveis fictícios.
+  - Próximas fases (cada uma com banco, validação e autorização reais): CRM/leads/visitas/
+    agenda/tarefas → propostas/vendas/locações/contratos → financeiro/comissões →
+    documentos/notificações/relatórios.

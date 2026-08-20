@@ -50,7 +50,7 @@ model Imobiliaria {
 
   // Identidade visual configurável (Configurações da imobiliária).
   logoUrl     String?
-  corPrimaria String @default("#2563EB")
+  corPrimaria String  @default("#2563EB")
 
   // Onboarding: `onboardingEtapa` é o índice da última etapa concluída do
   // wizard (ver src/lib/imob/onboarding.ts); `onboardingConcluido` trava o
@@ -61,6 +61,9 @@ model Imobiliaria {
   usuarios      UsuarioImob[]
   papeis        Papel[]
   logsAuditoria LogAuditoriaImob[]
+  imoveis       Imovel[]
+  proprietarios Proprietario[]
+  clientes      Cliente[]
 
   criadoEm     DateTime @default(now())
   atualizadoEm DateTime @updatedAt
@@ -173,4 +176,232 @@ model LogAuditoriaImob {
   @@index([imobiliariaId, entidade, entidadeId])
   @@index([imobiliariaId, criadoEm])
   @@map("imob_logs_auditoria")
+}
+
+// ===========================================================================
+// FASE 2 — Imóveis, Proprietários, Clientes
+// ===========================================================================
+//
+// Convenções desta fase:
+// - Valores monetários em CENTAVOS (Int) — evita erro de ponto flutuante em
+//   dinheiro. A UI formata para reais.
+// - Sem exclusão física: Proprietario/Cliente têm `ativo` (arquivar em vez de
+//   apagar); Imovel usa StatusImovel.INATIVO. Toda mudança é auditada.
+// - Áreas em m² (Float, aceitam fração).
+
+enum TipoImovel {
+  CASA
+  APARTAMENTO
+  TERRENO
+  SALA_COMERCIAL
+  LOJA
+  GALPAO
+  FAZENDA
+  CHACARA
+  SITIO
+  PREDIO
+  OUTROS
+}
+
+enum FinalidadeImovel {
+  VENDA
+  LOCACAO
+  VENDA_LOCACAO
+}
+
+enum StatusImovel {
+  DISPONIVEL
+  RESERVADO
+  EM_NEGOCIACAO
+  VENDIDO
+  ALUGADO
+  INATIVO
+}
+
+enum TipoPessoa {
+  FISICA
+  JURIDICA
+}
+
+enum TipoCliente {
+  COMPRADOR
+  LOCATARIO
+  INVESTIDOR
+  PROPRIETARIO
+  INTERESSADO
+}
+
+model Proprietario {
+  id String @id @default(cuid())
+
+  imobiliaria   Imobiliaria @relation(fields: [imobiliariaId], references: [id], onDelete: Cascade)
+  imobiliariaId String
+
+  nome        String
+  tipoPessoa  TipoPessoa @default(FISICA)
+  documento   String? // CPF ou CNPJ, apenas dígitos
+  email       String?
+  telefone    String?
+  whatsapp    String?
+  endereco    String?
+  observacoes String?
+
+  ativo Boolean @default(true)
+
+  imoveis ImovelProprietario[]
+
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  @@index([imobiliariaId])
+  @@index([imobiliariaId, ativo])
+  @@map("imob_proprietarios")
+}
+
+model Cliente {
+  id String @id @default(cuid())
+
+  imobiliaria   Imobiliaria @relation(fields: [imobiliariaId], references: [id], onDelete: Cascade)
+  imobiliariaId String
+
+  nome           String
+  tipo           TipoCliente @default(INTERESSADO)
+  tipoPessoa     TipoPessoa  @default(FISICA)
+  documento      String?
+  email          String?
+  telefone       String?
+  whatsapp       String?
+  dataNascimento DateTime?
+  profissao      String?
+  estadoCivil    String?
+  endereco       String?
+  observacoes    String?
+
+  ativo Boolean @default(true)
+
+  // Preferências imobiliárias (perfil de busca) — usadas no matching
+  // cliente×imóvel (fase futura). Valores monetários em centavos.
+  prefTipoImovel TipoImovel?
+  prefFinalidade FinalidadeImovel?
+  prefValorMin   Int?
+  prefValorMax   Int?
+  prefCidade     String?
+  prefBairro     String?
+  prefQuartos    Int?
+  prefSuites     Int?
+  prefVagas      Int?
+  prefAreaMinima Float?
+
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  @@index([imobiliariaId])
+  @@index([imobiliariaId, ativo])
+  @@index([imobiliariaId, tipo])
+  @@map("imob_clientes")
+}
+
+model Imovel {
+  id String @id @default(cuid())
+
+  imobiliaria   Imobiliaria @relation(fields: [imobiliariaId], references: [id], onDelete: Cascade)
+  imobiliariaId String
+
+  // Código interno legível, único por imobiliária (não global).
+  codigo    String
+  titulo    String
+  descricao String?
+
+  tipo       TipoImovel
+  finalidade FinalidadeImovel
+  status     StatusImovel     @default(DISPONIVEL)
+
+  // Valores em centavos.
+  precoVenda   Int?
+  precoAluguel Int?
+  condominio   Int?
+  iptu         Int?
+
+  areaTotal      Float?
+  areaConstruida Float?
+  quartos        Int?
+  suites         Int?
+  banheiros      Int?
+  vagas          Int?
+  andar          Int?
+  anoConstrucao  Int?
+
+  aceitaFinanciamento Boolean @default(false)
+  aceitaPermuta       Boolean @default(false)
+  mobiliado           Boolean @default(false)
+
+  // Amenidades/características livres (ex.: "piscina", "churrasqueira").
+  caracteristicas String[]
+
+  // Endereço do imóvel.
+  cep         String?
+  logradouro  String?
+  numero      String?
+  complemento String?
+  bairro      String?
+  cidade      String?
+  estado      String?
+  latitude    Float?
+  longitude   Float?
+
+  tourVirtualUrl String?
+
+  // Quem cadastrou (id do UsuarioImob) — scalar simples, sem FK, para
+  // auditoria leve sem acoplar a relação.
+  criadoPorId String?
+
+  proprietarios ImovelProprietario[]
+  fotos         FotoImovel[]
+
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  @@unique([imobiliariaId, codigo])
+  @@index([imobiliariaId, status])
+  @@index([imobiliariaId, tipo])
+  @@index([imobiliariaId, finalidade])
+  @@index([imobiliariaId, cidade])
+  @@map("imob_imoveis")
+}
+
+// Vínculo N:N imóvel↔proprietário (um imóvel pode ter vários donos, um dono
+// vários imóveis).
+model ImovelProprietario {
+  id String @id @default(cuid())
+
+  imovel   Imovel @relation(fields: [imovelId], references: [id], onDelete: Cascade)
+  imovelId String
+
+  proprietario   Proprietario @relation(fields: [proprietarioId], references: [id], onDelete: Cascade)
+  proprietarioId String
+
+  criadoEm DateTime @default(now())
+
+  @@unique([imovelId, proprietarioId])
+  @@index([proprietarioId])
+  @@map("imob_imovel_proprietarios")
+}
+
+model FotoImovel {
+  id String @id @default(cuid())
+
+  imovel   Imovel @relation(fields: [imovelId], references: [id], onDelete: Cascade)
+  imovelId String
+
+  // URL da imagem (storage externo — ver src/lib/imob/storage.ts). Guardamos
+  // a URL, não o binário.
+  url       String
+  legenda   String?
+  ordem     Int     @default(0)
+  principal Boolean @default(false)
+
+  criadoEm DateTime @default(now())
+
+  @@index([imovelId])
+  @@map("imob_fotos_imovel")
 }

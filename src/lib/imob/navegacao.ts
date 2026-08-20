@@ -15,6 +15,9 @@ export interface ItemNav {
 
 export const ITENS_NAV: readonly ItemNav[] = [
   { href: "/imob", rotulo: "Painel", permissao: null },
+  { href: "/imob/imoveis", rotulo: "Imóveis", permissao: "imoveis.ver" },
+  { href: "/imob/proprietarios", rotulo: "Proprietários", permissao: "proprietarios.ver" },
+  { href: "/imob/clientes", rotulo: "Clientes", permissao: "clientes.ver" },
   { href: "/imob/usuarios", rotulo: "Usuários", permissao: "usuarios.ver" },
   { href: "/imob/papeis", rotulo: "Papéis e permissões", permissao: "papeis.ver" },
   { href: "/imob/configuracoes", rotulo: "Configurações", permissao: "configuracoes.ver" },

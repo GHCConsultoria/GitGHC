@@ -49,6 +49,19 @@
           }
         }
       }
+    },
+    {
+      "includes": [
+        "src/components/imob/FotosImovelClient.tsx",
+        "src/app/imob/(painel)/imoveis/page.tsx"
+      ],
+      "linter": {
+        "rules": {
+          "performance": {
+            "noImgElement": "off"
+          }
+        }
+      }
     }
   ]
 }

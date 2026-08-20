@@ -5,7 +5,8 @@ import { registrarAuditoria } from "@/lib/imob/auditoria";
 import { obterSessaoImob } from "@/lib/imob/auth";
 import { obterPapelDoTenant, obterUsuarioDoTenant } from "@/lib/imob/consultas";
 import { prismaImob } from "@/lib/imob/prisma";
-import { exigirPermissao, PermissaoNegadaError, sanitizarPermissoes } from "@/lib/imob/rbac";
+import { exigirPermissao, sanitizarPermissoes } from "@/lib/imob/rbac";
+import { paraMensagem, type ResultadoAcao } from "@/lib/imob/resultado";
 import {
   criarPapelSchema,
   criarUsuarioSchema,
@@ -15,22 +16,7 @@ import {
 } from "@/lib/imob/schemas";
 import { criarClienteSupabaseAdmin } from "@/lib/supabase/admin";
 
-export type ResultadoAcao = { sucesso: true } | { sucesso: false; erro: string };
-
 const SUPABASE_CONFIGURADO = Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
-
-/**
- * Converte qualquer erro numa mensagem amigável, sem vazar stack/SQL. Erro de
- * permissão vira mensagem clara; o resto vira uma genérica (o detalhe técnico
- * fica nos logs do servidor).
- */
-function paraMensagem(erro: unknown, generica: string): string {
-  if (erro instanceof PermissaoNegadaError) {
-    return "Você não tem permissão para esta ação.";
-  }
-  console.error("[imob] acao falhou:", erro);
-  return generica;
-}
 
 // ---------------------------------------------------------------------------
 // Usuários
