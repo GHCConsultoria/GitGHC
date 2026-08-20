@@ -3,6 +3,7 @@ import { NextResponse, type NextRequest } from "next/server";
 
 const ROTA_LOGIN = "/login";
 const ROTA_LOGIN_NUTRI = "/nutri/login";
+const ROTA_LOGIN_IMOB = "/imob/login";
 const ROTA_CADASTRO = "/cadastro";
 
 /**
@@ -58,12 +59,17 @@ export async function middleware(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname;
   const ehAreaNutri = pathname.startsWith("/nutri");
-  const ehRotaDeLogin = ehAreaNutri ? pathname.startsWith(ROTA_LOGIN_NUTRI) : pathname.startsWith(ROTA_LOGIN);
-  const ehRotaDeCadastro = !ehAreaNutri && pathname.startsWith(ROTA_CADASTRO);
+  const ehAreaImob = pathname.startsWith("/imob");
+  let rotaDeLogin = ROTA_LOGIN;
+  if (ehAreaNutri) rotaDeLogin = ROTA_LOGIN_NUTRI;
+  else if (ehAreaImob) rotaDeLogin = ROTA_LOGIN_IMOB;
+
+  const ehRotaDeLogin = pathname.startsWith(rotaDeLogin);
+  const ehRotaDeCadastro = !ehAreaNutri && !ehAreaImob && pathname.startsWith(ROTA_CADASTRO);
 
   if (!user && !ehRotaDeLogin && !ehRotaDeCadastro) {
     const destino = request.nextUrl.clone();
-    destino.pathname = ehAreaNutri ? ROTA_LOGIN_NUTRI : ROTA_LOGIN;
+    destino.pathname = rotaDeLogin;
     return NextResponse.redirect(destino);
   }
 

@@ -42,3 +42,6 @@ next-env.d.ts
 
 # prisma client gerado do schema separado do NoSheipe (Turso)
 /prisma/nutri/generated
+
+# prisma client gerado do schema separado do produto imobiliário (Postgres)
+/prisma/imob/generated

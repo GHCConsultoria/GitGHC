@@ -1,0 +1,176 @@
+// Schema do produto imobiliário (vertical "imob") — banco Postgres próprio,
+// separado do Postgres do sistema jurídico em ../schema.prisma e do
+// Turso/libSQL do NoSheipe em ../nutri/schema.prisma. Os três produtos vivem
+// no mesmo repositório mas não compartilham banco nem client Prisma; ver
+// src/lib/imob/prisma.ts. Isolamento multi-tenant é por `imobiliariaId` em
+// toda entidade de negócio — nunca confie só no front, o filtro por tenant
+// mora nas consultas do servidor (src/lib/imob/consultas.ts).
+//
+// Fase 1 (esta): tenant + usuários + papéis/RBAC + auditoria. As demais
+// entidades (imóveis, leads, propostas, financeiro, ...) entram em migrations
+// aditivas nas próximas fases.
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "./generated"
+}
+
+datasource db {
+  provider  = "postgresql"
+  // Banco DEDICADO do produto imobiliário (não é o mesmo do Zelo). Pode ser
+  // outro projeto Supabase ou outro database no mesmo servidor. Pooled
+  // (pgbouncer, 6543) em runtime.
+  url       = env("IMOB_DATABASE_URL")
+  // Conexão direta (5432) só para migrations/DDL. Ver ../schema.prisma para
+  // o porquê de o pooler não servir migration.
+  directUrl = env("IMOB_DIRECT_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Tenant
+// ---------------------------------------------------------------------------
+
+model Imobiliaria {
+  id       String  @id @default(cuid())
+  nome     String
+  cnpj     String?
+  creci    String?
+  email    String?
+  telefone String?
+
+  // Endereço da imobiliária (não confundir com endereço de imóvel, que vem
+  // em fase futura no model Imovel).
+  cep         String?
+  logradouro  String?
+  numero      String?
+  complemento String?
+  bairro      String?
+  cidade      String?
+  estado      String?
+
+  // Identidade visual configurável (Configurações da imobiliária).
+  logoUrl     String?
+  corPrimaria String @default("#2563EB")
+
+  // Onboarding: `onboardingEtapa` é o índice da última etapa concluída do
+  // wizard (ver src/lib/imob/onboarding.ts); `onboardingConcluido` trava o
+  // wizard depois de finalizado.
+  onboardingConcluido Boolean @default(false)
+  onboardingEtapa     Int     @default(0)
+
+  usuarios      UsuarioImob[]
+  papeis        Papel[]
+  logsAuditoria LogAuditoriaImob[]
+
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  @@map("imob_imobiliarias")
+}
+
+// ---------------------------------------------------------------------------
+// Papel (RBAC) — permissões granulares por string, catálogo em
+// src/lib/imob/rbac.ts. Papéis com `sistema=true` são os embutidos
+// (Administrador/Gestor/Corretor/Financeiro/Assistente), semeados por tenant
+// e não removíveis; o admin pode criar papéis próprios com qualquer
+// combinação de permissões do catálogo.
+// ---------------------------------------------------------------------------
+
+model Papel {
+  id        String  @id @default(cuid())
+  nome      String
+  descricao String?
+  sistema   Boolean @default(false)
+
+  // Lista de chaves de permissão (ex.: "imoveis.criar"). Array nativo do
+  // Postgres — granular e barato de checar, sem tabela de junção.
+  permissoes String[]
+
+  imobiliaria   Imobiliaria @relation(fields: [imobiliariaId], references: [id], onDelete: Cascade)
+  imobiliariaId String
+
+  usuarios UsuarioImob[]
+
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  // nome único por tenant, não globalmente
+  @@unique([imobiliariaId, nome])
+  @@index([imobiliariaId])
+  @@map("imob_papeis")
+}
+
+// ---------------------------------------------------------------------------
+// Usuário
+// ---------------------------------------------------------------------------
+
+enum StatusUsuarioImob {
+  ATIVO
+  INATIVO
+}
+
+model UsuarioImob {
+  id String @id @default(cuid())
+
+  // id do usuário no Supabase Auth (auth.users.id) — o Supabase é o serviço
+  // de identidade/sessão (GoTrue), igual aos outros verticais; os dados de
+  // negócio vivem aqui.
+  authUserId String @unique
+
+  nome     String
+  email    String
+  telefone String?
+
+  status         StatusUsuarioImob @default(ATIVO)
+  // Último login registrado (atualizado no fluxo de sessão) — requisito de
+  // "registro de último acesso".
+  ultimoAcessoEm DateTime?
+
+  imobiliaria   Imobiliaria @relation(fields: [imobiliariaId], references: [id], onDelete: Cascade)
+  imobiliariaId String
+
+  papel   Papel  @relation(fields: [papelId], references: [id])
+  papelId String
+
+  logsAuditoria LogAuditoriaImob[]
+
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  // e-mail único por tenant (a mesma pessoa pode existir em imobiliárias
+  // diferentes; dentro de uma, não duplica)
+  @@unique([imobiliariaId, email])
+  @@index([imobiliariaId])
+  @@index([papelId])
+  @@map("imob_usuarios")
+}
+
+// ---------------------------------------------------------------------------
+// Auditoria imutável — uma linha por ação relevante, nunca sobrescrita nem
+// apagada. `valorAnterior`/`valorNovo` guardam o antes/depois em JSON.
+// ---------------------------------------------------------------------------
+
+model LogAuditoriaImob {
+  id String @id @default(cuid())
+
+  imobiliaria   Imobiliaria @relation(fields: [imobiliariaId], references: [id], onDelete: Cascade)
+  imobiliariaId String
+
+  // null quando a ação é do sistema (ex.: seed/onboarding antes de haver
+  // usuário) — mantém o log válido mesmo sem autor humano.
+  usuario   UsuarioImob? @relation(fields: [usuarioId], references: [id])
+  usuarioId String?
+
+  entidade      String
+  entidadeId    String
+  acao          String
+  valorAnterior Json?
+  valorNovo     Json?
+  ip            String?
+
+  criadoEm DateTime @default(now())
+
+  @@index([imobiliariaId, entidade, entidadeId])
+  @@index([imobiliariaId, criadoEm])
+  @@map("imob_logs_auditoria")
+}
