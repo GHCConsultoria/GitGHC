@@ -58,21 +58,24 @@ model Imobiliaria {
   onboardingConcluido Boolean @default(false)
   onboardingEtapa     Int     @default(0)
 
-  usuarios      UsuarioImob[]
-  papeis        Papel[]
-  logsAuditoria LogAuditoriaImob[]
-  imoveis       Imovel[]
-  proprietarios Proprietario[]
-  clientes      Cliente[]
-  corretores    Corretor[]
-  leads         Lead[]
-  visitas       Visita[]
-  tarefas       Tarefa[]
-  captacoes     Captacao[]
-  propostas     Proposta[]
-  vendas        Venda[]
-  locacoes      Locacao[]
-  contratos     Contrato[]
+  usuarios       UsuarioImob[]
+  papeis         Papel[]
+  logsAuditoria  LogAuditoriaImob[]
+  imoveis        Imovel[]
+  proprietarios  Proprietario[]
+  clientes       Cliente[]
+  corretores     Corretor[]
+  leads          Lead[]
+  visitas        Visita[]
+  tarefas        Tarefa[]
+  captacoes      Captacao[]
+  propostas      Proposta[]
+  vendas         Venda[]
+  locacoes       Locacao[]
+  contratos      Contrato[]
+  lancamentos    LancamentoFinanceiro[]
+  comissoes      Comissao[]
+  regrasComissao RegraComissao[]
 
   criadoEm     DateTime @default(now())
   atualizadoEm DateTime @updatedAt
@@ -842,4 +845,126 @@ model ContratoDocumento {
 
   @@index([contratoId])
   @@map("imob_contratos_documentos")
+}
+
+// ===========================================================================
+// FASE 5 — Financeiro (contas a pagar/receber) e Comissões
+// ===========================================================================
+//
+// Valores em centavos. Referências a outras entidades por id escalar,
+// resolvidas em lote (resolvedores.ts). Sem exclusão física: lançamentos e
+// comissões mudam de status. `status` de lançamento é derivado no domínio a
+// partir de vencimento/pagamento, mas persistido para consulta/filtro.
+
+enum TipoLancamento {
+  RECEBER
+  PAGAR
+}
+
+enum StatusLancamento {
+  PENDENTE
+  PAGO
+  CANCELADO
+}
+
+model LancamentoFinanceiro {
+  id String @id @default(cuid())
+
+  imobiliaria   Imobiliaria @relation(fields: [imobiliariaId], references: [id], onDelete: Cascade)
+  imobiliariaId String
+
+  tipo      TipoLancamento
+  descricao String
+  categoria String?
+  valor     Int // centavos
+
+  vencimento  DateTime
+  pagamentoEm DateTime?
+  status      StatusLancamento @default(PENDENTE)
+
+  formaPagamento String?
+  centroCusto    String?
+
+  // vínculos opcionais (id escalar)
+  clienteId  String?
+  imovelId   String?
+  contratoId String?
+  corretorId String?
+
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  @@index([imobiliariaId, tipo, status])
+  @@index([imobiliariaId, vencimento])
+  @@map("imob_lancamentos")
+}
+
+enum TipoComissao {
+  CORRETOR_VENDEDOR
+  CORRETOR_CAPTADOR
+  GERENTE
+  IMOBILIARIA
+}
+
+enum StatusComissao {
+  PREVISTA
+  APROVADA
+  PAGA
+  CANCELADA
+}
+
+model Comissao {
+  id String @id @default(cuid())
+
+  imobiliaria   Imobiliaria @relation(fields: [imobiliariaId], references: [id], onDelete: Cascade)
+  imobiliariaId String
+
+  vendaId    String?
+  locacaoId  String?
+  corretorId String?
+
+  tipo       TipoComissao
+  descricao  String?
+  percentual Float? // % sobre o valor base, quando aplicável
+
+  valorPrevisto Int // centavos
+  valorAprovado Int?
+  valorPago     Int?
+
+  status StatusComissao @default(PREVISTA)
+  pagoEm DateTime?
+
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  @@index([imobiliariaId, status])
+  @@index([imobiliariaId, vendaId])
+  @@map("imob_comissoes")
+}
+
+// Regra de comissão configurável por imobiliária. `percentualTotal` é a
+// comissão sobre o valor da venda; os `pct*` distribuem esse total entre os
+// papéis e devem somar 100 (validado no domínio). Ao registrar uma venda,
+// pode-se aplicar a regra ativa para gerar as Comissões automaticamente.
+model RegraComissao {
+  id String @id @default(cuid())
+
+  imobiliaria   Imobiliaria @relation(fields: [imobiliariaId], references: [id], onDelete: Cascade)
+  imobiliariaId String
+
+  nome            String
+  percentualTotal Float
+
+  pctCorretorVendedor Float @default(50)
+  pctCorretorCaptador Float @default(0)
+  pctGerente          Float @default(0)
+  pctImobiliaria      Float @default(50)
+
+  ativo Boolean @default(true)
+
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  @@index([imobiliariaId, ativo])
+  @@map("imob_regras_comissao")
 }

@@ -440,3 +440,57 @@ export const documentoContratoSchema = z.object({
   nome: z.string().trim().min(1, "informe o nome do documento"),
   url: z.string().trim().min(1, "informe a URL do documento"),
 });
+
+// ===========================================================================
+// FASE 5 — Financeiro e Comissões
+// ===========================================================================
+
+export const TIPOS_LANCAMENTO = ["RECEBER", "PAGAR"] as const;
+export const STATUS_LANCAMENTO = ["PENDENTE", "PAGO", "CANCELADO"] as const;
+export const TIPOS_COMISSAO = ["CORRETOR_VENDEDOR", "CORRETOR_CAPTADOR", "GERENTE", "IMOBILIARIA"] as const;
+export const STATUS_COMISSAO = ["PREVISTA", "APROVADA", "PAGA", "CANCELADA"] as const;
+
+export const lancamentoSchema = z.object({
+  tipo: z.enum(TIPOS_LANCAMENTO),
+  descricao: z.string().trim().min(1, "informe a descrição"),
+  categoria: textoOpcional,
+  valor: dinheiroObrigatorio,
+  vencimento: z.coerce.date({ message: "informe o vencimento" }),
+  formaPagamento: textoOpcional,
+  centroCusto: textoOpcional,
+  clienteId: idOpcional,
+  imovelId: idOpcional,
+  contratoId: idOpcional,
+  corretorId: idOpcional,
+});
+export type LancamentoInput = z.infer<typeof lancamentoSchema>;
+
+export const marcarPagoSchema = z.object({
+  lancamentoId: z.string().min(1),
+  pagamentoEm: dataOpcional,
+});
+
+export const comissaoSchema = z.object({
+  corretorId: idOpcional,
+  vendaId: idOpcional,
+  tipo: z.enum(TIPOS_COMISSAO).default("CORRETOR_VENDEDOR"),
+  descricao: textoOpcional,
+  percentual: z.union([z.coerce.number().min(0).max(100), z.literal("")]).optional(),
+  valorPrevisto: dinheiroObrigatorio,
+});
+export type ComissaoInput = z.infer<typeof comissaoSchema>;
+
+export const mudarStatusComissaoSchema = z.object({
+  comissaoId: z.string().min(1),
+  status: z.enum(STATUS_COMISSAO),
+});
+
+// Gera as comissões de uma venda aplicando percentuais de distribuição.
+export const gerarComissoesSchema = z.object({
+  vendaId: z.string().min(1, "selecione a venda"),
+  percentualTotal: z.coerce.number().min(0).max(100),
+  pctCorretorVendedor: z.coerce.number().min(0).max(100).default(50),
+  pctCorretorCaptador: z.coerce.number().min(0).max(100).default(0),
+  pctGerente: z.coerce.number().min(0).max(100).default(0),
+  pctImobiliaria: z.coerce.number().min(0).max(100).default(50),
+});

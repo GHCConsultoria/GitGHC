@@ -17,7 +17,8 @@ const AUTH_USER_ID_DEMO = "demo-imob-admin-auth-id";
  * proprietários, 20 clientes, 30 imóveis), o CRM da Fase 3 (4 corretores, 20
  * leads, 10 visitas, 10 tarefas, 6 captações) e o comercial da Fase 4 (10
  * propostas, 8 vendas, 8 locações, 8 contratos — alguns vencendo, para popular
- * os alertas). Comissões/financeiro detalhado entram nas fases seguintes.
+ * os alertas) e o financeiro da Fase 5 (12 lançamentos a pagar/receber,
+ * comissões por venda e uma regra de comissão padrão).
  */
 async function main() {
   const imobiliaria = await prisma.imobiliaria.upsert({
@@ -96,6 +97,105 @@ async function main() {
   await seedCadastrosDemo(imobiliaria.id);
   await seedCrmDemo(imobiliaria.id);
   await seedFinanceiroDemo(imobiliaria.id);
+  await seedContasEComissoesDemo(imobiliaria.id);
+}
+
+// --- Contas a pagar/receber e comissões (Fase 5) --------------------------
+
+async function seedContasEComissoesDemo(imobiliariaId: string) {
+  const clientes = await prisma.cliente.findMany({ where: { imobiliariaId }, select: { id: true } });
+  const corretores = await prisma.corretor.findMany({ where: { imobiliariaId }, select: { id: true } });
+  const vendas = await prisma.venda.findMany({
+    where: { imobiliariaId },
+    select: { id: true, valorVenda: true, corretorId: true },
+  });
+  const clienteIds = clientes.map((c) => c.id);
+  const corretorIds = corretores.map((c) => c.id);
+  const categoriasReceber = ["Aluguel", "Comissão", "Taxa de administração", "Venda"];
+  const categoriasPagar = ["Fornecedores", "Marketing", "Impostos", "Condomínio"];
+
+  // 12 lançamentos (mistura receber/pagar, pagos e pendentes)
+  for (let i = 0; i < 12; i++) {
+    const id = `demo-lanc-${i + 1}`;
+    const receber = i % 2 === 0;
+    const pago = i % 3 !== 0;
+    await prisma.lancamentoFinanceiro.upsert({
+      where: { id },
+      update: {},
+      create: {
+        id,
+        imobiliariaId,
+        tipo: receber ? "RECEBER" : "PAGAR",
+        descricao: receber ? `Recebimento ${i + 1}` : `Pagamento ${i + 1}`,
+        categoria: receber
+          ? categoriasReceber[i % categoriasReceber.length]
+          : categoriasPagar[i % categoriasPagar.length],
+        valor: 150000 + i * 40000,
+        vencimento: new Date(Date.now() + (i - 4) * 3 * 86400000),
+        status: pago ? "PAGO" : "PENDENTE",
+        pagamentoEm: pago ? new Date(Date.now() - (i % 5) * 86400000) : null,
+        clienteId: receber && clienteIds.length ? clienteIds[i % clienteIds.length] : null,
+        corretorId: corretorIds.length ? corretorIds[i % corretorIds.length] : null,
+      },
+    });
+  }
+
+  // comissões geradas para as primeiras vendas (50/50 corretor/imobiliária)
+  const statusComissao = ["PREVISTA", "APROVADA", "PAGA"] as const;
+  let n = 0;
+  for (const venda of vendas.slice(0, 5)) {
+    const total = Math.round((venda.valorVenda * 6) / 100);
+    const metade = Math.floor(total / 2);
+    const status = statusComissao[n % statusComissao.length];
+    // corretor vendedor
+    await prisma.comissao.upsert({
+      where: { id: `demo-com-${n + 1}a` },
+      update: {},
+      create: {
+        id: `demo-com-${n + 1}a`,
+        imobiliariaId,
+        vendaId: venda.id,
+        corretorId: venda.corretorId,
+        tipo: "CORRETOR_VENDEDOR",
+        percentual: 6,
+        valorPrevisto: metade,
+        valorAprovado: status !== "PREVISTA" ? metade : null,
+        valorPago: status === "PAGA" ? metade : null,
+        pagoEm: status === "PAGA" ? new Date() : null,
+        status,
+      },
+    });
+    // imobiliária
+    await prisma.comissao.upsert({
+      where: { id: `demo-com-${n + 1}b` },
+      update: {},
+      create: {
+        id: `demo-com-${n + 1}b`,
+        imobiliariaId,
+        vendaId: venda.id,
+        tipo: "IMOBILIARIA",
+        percentual: 6,
+        valorPrevisto: total - metade,
+        status: "PREVISTA",
+      },
+    });
+    n += 1;
+  }
+
+  // uma regra de comissão padrão ativa
+  await prisma.regraComissao.upsert({
+    where: { id: "demo-regra-1" },
+    update: {},
+    create: {
+      id: "demo-regra-1",
+      imobiliariaId,
+      nome: "Padrão 6%",
+      percentualTotal: 6,
+      pctCorretorVendedor: 50,
+      pctImobiliaria: 50,
+      ativo: true,
+    },
+  });
 }
 
 // --- Propostas / Vendas / Locações / Contratos (Fase 4) -------------------

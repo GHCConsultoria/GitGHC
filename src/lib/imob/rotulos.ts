@@ -139,3 +139,30 @@ export const ROTULO_STATUS_CONTRATO: Record<string, string> = {
   ENCERRADO: "Encerrado",
   CANCELADO: "Cancelado",
 };
+
+// --- Fase 5 ---------------------------------------------------------------
+
+export const ROTULO_TIPO_LANCAMENTO: Record<string, string> = {
+  RECEBER: "A receber",
+  PAGAR: "A pagar",
+};
+
+export const ROTULO_STATUS_LANCAMENTO: Record<string, string> = {
+  PENDENTE: "Pendente",
+  PAGO: "Pago",
+  CANCELADO: "Cancelado",
+};
+
+export const ROTULO_TIPO_COMISSAO: Record<string, string> = {
+  CORRETOR_VENDEDOR: "Corretor vendedor",
+  CORRETOR_CAPTADOR: "Corretor captador",
+  GERENTE: "Gerente",
+  IMOBILIARIA: "Imobiliária",
+};
+
+export const ROTULO_STATUS_COMISSAO: Record<string, string> = {
+  PREVISTA: "Prevista",
+  APROVADA: "Aprovada",
+  PAGA: "Paga",
+  CANCELADA: "Cancelada",
+};
