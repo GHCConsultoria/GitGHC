@@ -1,44 +1,13 @@
 import { calcularCompatibilidade, type PreferenciasCliente } from "@/lib/imob/matching";
 import { prismaImob } from "@/lib/imob/prisma";
+import { mapaClientes, mapaImoveis, mapaProprietarios } from "@/lib/imob/resolvedores";
 import { ETAPAS_LEAD } from "@/lib/imob/schemas";
 
 /**
  * Consultas do CRM (Fase 3) — todas filtradas por `imobiliariaId`. Referências
- * a imóvel/cliente/proprietário são ids escalares; resolvemos os nomes em lote
- * (uma query por tipo) para evitar N+1.
+ * a imóvel/cliente/proprietário são ids escalares; os nomes são resolvidos em
+ * lote (src/lib/imob/resolvedores.ts) para evitar N+1.
  */
-
-// --- Resolvedores de nome em lote -----------------------------------------
-
-async function mapaImoveis(imobiliariaId: string, ids: (string | null)[]) {
-  const unicos = Array.from(new Set(ids.filter((v): v is string => Boolean(v))));
-  if (unicos.length === 0) return new Map<string, { codigo: string; titulo: string }>();
-  const imoveis = await prismaImob.imovel.findMany({
-    where: { id: { in: unicos }, imobiliariaId },
-    select: { id: true, codigo: true, titulo: true },
-  });
-  return new Map(imoveis.map((i) => [i.id, { codigo: i.codigo, titulo: i.titulo }]));
-}
-
-async function mapaClientes(imobiliariaId: string, ids: (string | null)[]) {
-  const unicos = Array.from(new Set(ids.filter((v): v is string => Boolean(v))));
-  if (unicos.length === 0) return new Map<string, string>();
-  const clientes = await prismaImob.cliente.findMany({
-    where: { id: { in: unicos }, imobiliariaId },
-    select: { id: true, nome: true },
-  });
-  return new Map(clientes.map((c) => [c.id, c.nome]));
-}
-
-async function mapaProprietarios(imobiliariaId: string, ids: (string | null)[]) {
-  const unicos = Array.from(new Set(ids.filter((v): v is string => Boolean(v))));
-  if (unicos.length === 0) return new Map<string, string>();
-  const props = await prismaImob.proprietario.findMany({
-    where: { id: { in: unicos }, imobiliariaId },
-    select: { id: true, nome: true },
-  });
-  return new Map(props.map((p) => [p.id, p.nome]));
-}
 
 // --- Corretores -----------------------------------------------------------
 

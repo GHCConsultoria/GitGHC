@@ -69,6 +69,10 @@ model Imobiliaria {
   visitas       Visita[]
   tarefas       Tarefa[]
   captacoes     Captacao[]
+  propostas     Proposta[]
+  vendas        Venda[]
+  locacoes      Locacao[]
+  contratos     Contrato[]
 
   criadoEm     DateTime @default(now())
   atualizadoEm DateTime @updatedAt
@@ -645,4 +649,197 @@ model Captacao {
 
   @@index([imobiliariaId, status])
   @@map("imob_captacoes")
+}
+
+// ===========================================================================
+// FASE 4 — Propostas, Vendas, Locações, Contratos
+// ===========================================================================
+//
+// Referências a imóvel/cliente/proprietário/corretor por id escalar (mesmo
+// padrão da Fase 3), resolvidas em lote na consulta. Valores em centavos.
+// Sem exclusão física: Proposta/Locacao/Contrato mudam de status; Venda é um
+// registro imutável (o "estorno" seria uma ação futura, não um delete).
+
+enum StatusProposta {
+  RASCUNHO
+  ENVIADA
+  EM_ANALISE
+  ACEITA
+  RECUSADA
+  EXPIRADA
+  CANCELADA
+}
+
+model Proposta {
+  id String @id @default(cuid())
+
+  imobiliaria   Imobiliaria @relation(fields: [imobiliariaId], references: [id], onDelete: Cascade)
+  imobiliariaId String
+
+  imovelId   String
+  clienteId  String?
+  corretorId String?
+
+  valorSolicitado Int? // preço anunciado (centavos)
+  valorProposto   Int // valor da proposta (centavos)
+  formaPagamento  String?
+  entrada         Int? // centavos
+  financiamento   Boolean @default(false)
+  permuta         Boolean @default(false)
+  observacoes     String?
+
+  data     DateTime  @default(now())
+  validade DateTime?
+
+  status StatusProposta @default(RASCUNHO)
+
+  historico PropostaHistorico[]
+
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  @@index([imobiliariaId, status])
+  @@index([imobiliariaId, imovelId])
+  @@map("imob_propostas")
+}
+
+// Trilha de alterações da proposta (mudanças de status/valor) — nunca
+// sobrescrita, mesmo princípio de auditoria do domínio.
+model PropostaHistorico {
+  id String @id @default(cuid())
+
+  proposta   Proposta @relation(fields: [propostaId], references: [id], onDelete: Cascade)
+  propostaId String
+
+  statusAnterior String?
+  statusNovo     String
+  observacao     String?
+  autorId        String?
+
+  criadoEm DateTime @default(now())
+
+  @@index([propostaId])
+  @@map("imob_propostas_historico")
+}
+
+model Venda {
+  id String @id @default(cuid())
+
+  imobiliaria   Imobiliaria @relation(fields: [imobiliariaId], references: [id], onDelete: Cascade)
+  imobiliariaId String
+
+  imovelId       String
+  clienteId      String?
+  proprietarioId String?
+  corretorId     String?
+  propostaId     String? // origem opcional
+
+  valorVenda     Int // centavos
+  data           DateTime @default(now())
+  formaPagamento String?
+  financiamento  Boolean  @default(false)
+  comissaoValor  Int? // centavos — comissão total apurada (Fase 5 detalha)
+  observacoes    String?
+
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  @@index([imobiliariaId, data])
+  @@map("imob_vendas")
+}
+
+enum StatusLocacao {
+  ATIVO
+  ENCERRADO
+  RESCINDIDO
+  INADIMPLENTE
+}
+
+model Locacao {
+  id String @id @default(cuid())
+
+  imobiliaria   Imobiliaria @relation(fields: [imobiliariaId], references: [id], onDelete: Cascade)
+  imobiliariaId String
+
+  imovelId       String
+  proprietarioId String?
+  locatarioId    String? // Cliente
+  corretorId     String?
+  fiadorNome     String?
+
+  valorAluguel Int // centavos
+  condominio   Int?
+  iptu         Int?
+  seguro       Int?
+  caucao       Int?
+
+  dataInicial    DateTime
+  dataFinal      DateTime?
+  diaVencimento  Int? // dia do mês (1..31)
+  indiceReajuste String? // ex.: "IGPM", "IPCA"
+
+  status StatusLocacao @default(ATIVO)
+
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  @@index([imobiliariaId, status])
+  @@map("imob_locacoes")
+}
+
+enum TipoContrato {
+  ADMINISTRACAO
+  LOCACAO
+  COMPRA_VENDA
+  CAPTACAO
+  PRESTACAO_SERVICOS
+}
+
+enum StatusContrato {
+  ATIVO
+  ENCERRADO
+  CANCELADO
+}
+
+model Contrato {
+  id String @id @default(cuid())
+
+  imobiliaria   Imobiliaria @relation(fields: [imobiliariaId], references: [id], onDelete: Cascade)
+  imobiliariaId String
+
+  titulo String
+  tipo   TipoContrato
+
+  imovelId       String?
+  clienteId      String?
+  proprietarioId String?
+
+  dataInicio  DateTime?
+  dataFim     DateTime? // usada para os alertas de vencimento (30/15/7/1 dias)
+  status      StatusContrato @default(ATIVO)
+  observacoes String?
+
+  documentos ContratoDocumento[]
+
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  @@index([imobiliariaId, status])
+  @@index([imobiliariaId, dataFim])
+  @@map("imob_contratos")
+}
+
+model ContratoDocumento {
+  id String @id @default(cuid())
+
+  contrato   Contrato @relation(fields: [contratoId], references: [id], onDelete: Cascade)
+  contratoId String
+
+  nome String
+  url  String // storage externo (ver src/lib/imob/storage.ts)
+
+  criadoEm DateTime @default(now())
+
+  @@index([contratoId])
+  @@map("imob_contratos_documentos")
 }

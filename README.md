@@ -127,7 +127,7 @@ Supabase Auth e o Tailwind do repositório — sem introduzir Auth.js/shadcn/RHF
 - **Auth**: mesmo Supabase Auth (GoTrue) dos outros produtos; `UsuarioImob.authUserId`
   aponta pro mesmo `auth.users`. Cadastro self-service cria tenant + papéis padrão +
   primeiro Administrador numa transação, com rollback do usuário Auth se algo falhar.
-- **Status — Fases 1, 2 e 3 concluídas.**
+- **Status — Fases 1 a 4 concluídas.**
   - Fase 1: arquitetura, banco, autenticação, multi-tenancy, usuários, papéis/permissões,
     onboarding e auditoria.
   - Fase 2: imóveis (CRUD completo com fotos, filtros, busca e paginação), proprietários,
@@ -140,5 +140,11 @@ Supabase Auth e o Tailwind do repositório — sem introduzir Auth.js/shadcn/RHF
     e **matching cliente×imóvel** — função pura (`src/lib/imob/matching.ts`) que pontua a
     compatibilidade 0–100 pelas preferências do cliente. Seed com 4 corretores, 20 leads,
     10 visitas, 10 tarefas e 6 captações.
-  - Próximas fases (cada uma com banco, validação e autorização reais): propostas/vendas/
-    locações/contratos → financeiro/comissões → documentos/notificações/relatórios.
+  - Fase 4: propostas (com histórico de status), vendas (fecham o imóvel como vendido),
+    locações (aluguel/encargos/reajuste) e contratos com documentos e **alertas de
+    vencimento** (função pura `src/lib/imob/alertas.ts`, faixas 30/15/7/1 dias). Dashboard
+    ganhou KPIs financeiros (vendido no mês, locações ativas, propostas abertas, contratos
+    vencendo). Seed com 10 propostas, 8 vendas, 8 locações e 8 contratos.
+  - Próximas fases (cada uma com banco, validação e autorização reais): financeiro
+    (contas a pagar/receber, fluxo de caixa) e comissões → documentos/notificações →
+    relatórios/exportações.

@@ -14,9 +14,10 @@ const AUTH_USER_ID_DEMO = "demo-imob-admin-auth-id";
  * credenciais reais, igual ao advogado/nutricionista demo dos outros produtos.
  *
  * Além da conta (tenant, papéis, equipe), semeia os cadastros da Fase 2 (15
- * proprietários, 20 clientes, 30 imóveis) e o CRM da Fase 3 (4 corretores, 20
- * leads, 10 visitas, 10 tarefas, 6 captações). Propostas/vendas/financeiro
- * entram nas fases em que esses modelos existirem.
+ * proprietários, 20 clientes, 30 imóveis), o CRM da Fase 3 (4 corretores, 20
+ * leads, 10 visitas, 10 tarefas, 6 captações) e o comercial da Fase 4 (10
+ * propostas, 8 vendas, 8 locações, 8 contratos — alguns vencendo, para popular
+ * os alertas). Comissões/financeiro detalhado entram nas fases seguintes.
  */
 async function main() {
   const imobiliaria = await prisma.imobiliaria.upsert({
@@ -94,6 +95,123 @@ async function main() {
 
   await seedCadastrosDemo(imobiliaria.id);
   await seedCrmDemo(imobiliaria.id);
+  await seedFinanceiroDemo(imobiliaria.id);
+}
+
+// --- Propostas / Vendas / Locações / Contratos (Fase 4) -------------------
+
+const STATUS_PROPOSTA = ["RASCUNHO", "ENVIADA", "EM_ANALISE", "ACEITA", "RECUSADA"] as const;
+const TIPOS_CONTRATO = ["ADMINISTRACAO", "LOCACAO", "COMPRA_VENDA", "CAPTACAO", "PRESTACAO_SERVICOS"] as const;
+
+async function seedFinanceiroDemo(imobiliariaId: string) {
+  const imoveis = await prisma.imovel.findMany({
+    where: { imobiliariaId },
+    select: { id: true },
+    orderBy: { codigo: "asc" },
+  });
+  const clientes = await prisma.cliente.findMany({ where: { imobiliariaId }, select: { id: true } });
+  const proprietarios = await prisma.proprietario.findMany({ where: { imobiliariaId }, select: { id: true } });
+  const corretores = await prisma.corretor.findMany({ where: { imobiliariaId }, select: { id: true } });
+  const imovelIds = imoveis.map((i) => i.id);
+  const clienteIds = clientes.map((c) => c.id);
+  const proprietarioIds = proprietarios.map((p) => p.id);
+  const corretorIds = corretores.map((c) => c.id);
+  if (imovelIds.length === 0) return;
+
+  const pick = <T>(arr: T[], i: number): T | null => (arr.length ? arr[i % arr.length] : null);
+
+  // 10 propostas
+  for (let i = 0; i < 10; i++) {
+    const id = `demo-prop4-${i + 1}`;
+    await prisma.proposta.upsert({
+      where: { id },
+      update: {},
+      create: {
+        id,
+        imobiliariaId,
+        imovelId: imovelIds[i % imovelIds.length],
+        clienteId: pick(clienteIds, i),
+        corretorId: pick(corretorIds, i),
+        valorProposto: 28000000 + i * 3000000,
+        valorSolicitado: 30000000 + i * 3000000,
+        entrada: 5000000,
+        financiamento: i % 2 === 0,
+        status: STATUS_PROPOSTA[i % STATUS_PROPOSTA.length],
+        historico: {
+          create: [{ statusNovo: STATUS_PROPOSTA[i % STATUS_PROPOSTA.length], observacao: "Proposta demo" }],
+        },
+      },
+    });
+  }
+
+  // 8 vendas
+  for (let i = 0; i < 8; i++) {
+    const id = `demo-venda-${i + 1}`;
+    await prisma.venda.upsert({
+      where: { id },
+      update: {},
+      create: {
+        id,
+        imobiliariaId,
+        imovelId: imovelIds[i % imovelIds.length],
+        clienteId: pick(clienteIds, i),
+        proprietarioId: pick(proprietarioIds, i),
+        corretorId: pick(corretorIds, i),
+        valorVenda: 35000000 + i * 5000000,
+        comissaoValor: 2100000 + i * 300000,
+        data: new Date(Date.now() - i * 3 * 86400000),
+        financiamento: i % 2 === 0,
+      },
+    });
+  }
+
+  // 8 locações
+  for (let i = 0; i < 8; i++) {
+    const id = `demo-loc-${i + 1}`;
+    await prisma.locacao.upsert({
+      where: { id },
+      update: {},
+      create: {
+        id,
+        imobiliariaId,
+        imovelId: imovelIds[(i + 5) % imovelIds.length],
+        proprietarioId: pick(proprietarioIds, i),
+        locatarioId: pick(clienteIds, i),
+        corretorId: pick(corretorIds, i),
+        valorAluguel: 180000 + i * 20000,
+        condominio: 45000,
+        iptu: 12000,
+        caucao: 540000,
+        dataInicial: new Date(Date.now() - 30 * 86400000),
+        dataFinal: new Date(Date.now() + 335 * 86400000),
+        diaVencimento: 5 + (i % 20),
+        indiceReajuste: i % 2 === 0 ? "IGPM" : "IPCA",
+        status: i % 5 === 0 ? "INADIMPLENTE" : "ATIVO",
+      },
+    });
+  }
+
+  // 8 contratos — alguns vencendo em breve, para popular os alertas
+  const vencimentos = [5, 12, 25, 60, 120, -3, 200, 15]; // dias a partir de hoje
+  for (let i = 0; i < 8; i++) {
+    const id = `demo-contrato-${i + 1}`;
+    await prisma.contrato.upsert({
+      where: { id },
+      update: {},
+      create: {
+        id,
+        imobiliariaId,
+        titulo: `Contrato ${i + 1}`,
+        tipo: TIPOS_CONTRATO[i % TIPOS_CONTRATO.length],
+        imovelId: imovelIds[i % imovelIds.length],
+        clienteId: pick(clienteIds, i),
+        proprietarioId: pick(proprietarioIds, i),
+        dataInicio: new Date(Date.now() - 200 * 86400000),
+        dataFim: new Date(Date.now() + vencimentos[i] * 86400000),
+        status: "ATIVO",
+      },
+    });
+  }
 }
 
 // --- Dados comerciais de demonstração (Fase 2) ----------------------------

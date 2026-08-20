@@ -1,21 +1,24 @@
 import Link from "next/link";
 import { obterSessaoImob } from "@/lib/imob/auth";
 import { resumoComercial } from "@/lib/imob/consultas";
+import { resumoFinanceiro } from "@/lib/imob/consultas-fin";
+import { centavosParaReais } from "@/lib/imob/formato";
 import { temPermissao } from "@/lib/imob/rbac";
 import { ROTULO_TIPO_IMOVEL, rotulo } from "@/lib/imob/rotulos";
 
 export const dynamic = "force-dynamic";
 
 /**
- * Painel inicial. Fase 2: KPIs comerciais reais (imóveis por status, clientes,
- * proprietários) + distribuição por tipo. Vendas/locações/comissões entram
- * quando esses módulos existirem — nada de número inventado.
+ * Painel inicial. KPIs comerciais (imóveis por status, clientes, proprietários)
+ * e financeiros (vendas do mês, locações ativas, propostas abertas, contratos
+ * vencendo). Todos os números vêm do banco — nada inventado.
  */
 export default async function PainelImob() {
   const sessao = await obterSessaoImob();
-  const r = await resumoComercial(sessao.imobiliariaId);
+  const [r, fin] = await Promise.all([resumoComercial(sessao.imobiliariaId), resumoFinanceiro(sessao.imobiliariaId)]);
   const maxTipo = Math.max(1, ...r.porTipo.map((t) => t.total));
   const podeVerImoveis = temPermissao(sessao.papel.permissoes, "imoveis.ver");
+  const podeVerContratos = temPermissao(sessao.papel.permissoes, "contratos.ver");
 
   return (
     <div className="flex flex-col gap-8">
@@ -32,6 +35,24 @@ export default async function PainelImob() {
         <Cartao rotulo="Vendidos / alugados" valor={r.vendidos + r.alugados} />
         <Cartao rotulo="Clientes" valor={r.clientes} />
         <Cartao rotulo="Proprietários" valor={r.proprietarios} />
+      </section>
+
+      <section>
+        <p className="eyebrow mb-3">Financeiro (mês atual)</p>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <CartaoTexto
+            rotulo="Vendido no mês"
+            valor={centavosParaReais(fin.valorVendidoMes) || "R$ 0,00"}
+            sub={`${fin.qtdVendasMes} venda(s)`}
+          />
+          <Cartao rotulo="Locações ativas" valor={fin.locacoesAtivas} />
+          <Cartao rotulo="Propostas abertas" valor={fin.propostasAbertas} />
+          <Cartao
+            rotulo="Contratos vencendo"
+            valor={fin.contratosVencendo}
+            href={podeVerContratos ? "/imob/contratos" : undefined}
+          />
+        </div>
       </section>
 
       <section className="paper-card rounded-md p-6">
@@ -72,4 +93,14 @@ function Cartao({ rotulo: r, valor, href }: { rotulo: string; valor: number; hre
     );
   }
   return <div className="paper-card rounded-md p-5">{conteudo}</div>;
+}
+
+function CartaoTexto({ rotulo: r, valor, sub }: { rotulo: string; valor: string; sub?: string }) {
+  return (
+    <div className="paper-card rounded-md p-5">
+      <p className="eyebrow">{r}</p>
+      <p className="font-display mt-2 text-2xl">{valor}</p>
+      {sub && <p className="text-xs text-ink-faint">{sub}</p>}
+    </div>
+  );
 }

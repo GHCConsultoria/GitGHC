@@ -106,3 +106,36 @@ export const ROTULO_STATUS_CAPTACAO: Record<string, string> = {
   ATIVO: "Ativo",
   ENCERRADO: "Encerrado",
 };
+
+// --- Fase 4 ---------------------------------------------------------------
+
+export const ROTULO_STATUS_PROPOSTA: Record<string, string> = {
+  RASCUNHO: "Rascunho",
+  ENVIADA: "Enviada",
+  EM_ANALISE: "Em análise",
+  ACEITA: "Aceita",
+  RECUSADA: "Recusada",
+  EXPIRADA: "Expirada",
+  CANCELADA: "Cancelada",
+};
+
+export const ROTULO_STATUS_LOCACAO: Record<string, string> = {
+  ATIVO: "Ativo",
+  ENCERRADO: "Encerrado",
+  RESCINDIDO: "Rescindido",
+  INADIMPLENTE: "Inadimplente",
+};
+
+export const ROTULO_TIPO_CONTRATO: Record<string, string> = {
+  ADMINISTRACAO: "Administração",
+  LOCACAO: "Locação",
+  COMPRA_VENDA: "Compra e venda",
+  CAPTACAO: "Captação",
+  PRESTACAO_SERVICOS: "Prestação de serviços",
+};
+
+export const ROTULO_STATUS_CONTRATO: Record<string, string> = {
+  ATIVO: "Ativo",
+  ENCERRADO: "Encerrado",
+  CANCELADO: "Cancelado",
+};

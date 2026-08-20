@@ -344,3 +344,99 @@ export const captacaoSchema = z.object({
   observacoes: textoOpcional,
 });
 export type CaptacaoInput = z.infer<typeof captacaoSchema>;
+
+// ===========================================================================
+// FASE 4 — Propostas, Vendas, Locações, Contratos
+// ===========================================================================
+
+export const STATUS_PROPOSTA = [
+  "RASCUNHO",
+  "ENVIADA",
+  "EM_ANALISE",
+  "ACEITA",
+  "RECUSADA",
+  "EXPIRADA",
+  "CANCELADA",
+] as const;
+export const STATUS_LOCACAO = ["ATIVO", "ENCERRADO", "RESCINDIDO", "INADIMPLENTE"] as const;
+export const TIPOS_CONTRATO = ["ADMINISTRACAO", "LOCACAO", "COMPRA_VENDA", "CAPTACAO", "PRESTACAO_SERVICOS"] as const;
+export const STATUS_CONTRATO = ["ATIVO", "ENCERRADO", "CANCELADO"] as const;
+
+const dinheiroObrigatorio = z.preprocess(
+  (v) => (typeof v === "string" || typeof v === "number" ? reaisParaCentavos(v) : null),
+  z.number({ message: "informe um valor" }).int().nonnegative(),
+);
+
+export const propostaSchema = z.object({
+  imovelId: z.string().min(1, "selecione o imóvel"),
+  clienteId: idOpcional,
+  corretorId: idOpcional,
+  valorProposto: dinheiroObrigatorio,
+  valorSolicitado: dinheiroOpcional,
+  formaPagamento: textoOpcional,
+  entrada: dinheiroOpcional,
+  financiamento: z.coerce.boolean().optional(),
+  permuta: z.coerce.boolean().optional(),
+  validade: dataOpcional,
+  observacoes: textoOpcional,
+});
+export type PropostaInput = z.infer<typeof propostaSchema>;
+
+export const mudarStatusPropostaSchema = z.object({
+  propostaId: z.string().min(1),
+  status: z.enum(STATUS_PROPOSTA),
+  observacao: textoOpcional,
+});
+
+export const vendaSchema = z.object({
+  imovelId: z.string().min(1, "selecione o imóvel"),
+  clienteId: idOpcional,
+  proprietarioId: idOpcional,
+  corretorId: idOpcional,
+  propostaId: idOpcional,
+  valorVenda: dinheiroObrigatorio,
+  data: dataOpcional,
+  formaPagamento: textoOpcional,
+  financiamento: z.coerce.boolean().optional(),
+  comissaoValor: dinheiroOpcional,
+  observacoes: textoOpcional,
+});
+export type VendaInput = z.infer<typeof vendaSchema>;
+
+export const locacaoSchema = z.object({
+  imovelId: z.string().min(1, "selecione o imóvel"),
+  proprietarioId: idOpcional,
+  locatarioId: idOpcional,
+  corretorId: idOpcional,
+  fiadorNome: textoOpcional,
+  valorAluguel: dinheiroObrigatorio,
+  condominio: dinheiroOpcional,
+  iptu: dinheiroOpcional,
+  seguro: dinheiroOpcional,
+  caucao: dinheiroOpcional,
+  dataInicial: z.coerce.date({ message: "informe a data inicial" }),
+  dataFinal: dataOpcional,
+  diaVencimento: z.union([z.coerce.number().int().min(1).max(31), z.literal("")]).optional(),
+  indiceReajuste: textoOpcional,
+  status: z.enum(STATUS_LOCACAO).default("ATIVO"),
+});
+export type LocacaoInput = z.infer<typeof locacaoSchema>;
+
+export const contratoSchema = z.object({
+  titulo: z.string().trim().min(1, "informe o título"),
+  tipo: z.enum(TIPOS_CONTRATO),
+  imovelId: idOpcional,
+  clienteId: idOpcional,
+  proprietarioId: idOpcional,
+  dataInicio: dataOpcional,
+  dataFim: dataOpcional,
+  status: z.enum(STATUS_CONTRATO).default("ATIVO"),
+  observacoes: textoOpcional,
+});
+export type ContratoInput = z.infer<typeof contratoSchema>;
+
+export const documentoContratoSchema = z.object({
+  contratoId: z.string().min(1),
+  nome: z.string().trim().min(1, "informe o nome do documento"),
+  url: z.string().trim().min(1, "informe a URL do documento"),
+});
