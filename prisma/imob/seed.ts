@@ -13,9 +13,10 @@ const AUTH_USER_ID_DEMO = "demo-imob-admin-auth-id";
  * Supabase não está configurado — permite navegar /imob localmente sem
  * credenciais reais, igual ao advogado/nutricionista demo dos outros produtos.
  *
- * Além da conta (tenant, papéis, equipe), semeia os cadastros comerciais da
- * Fase 2: 15 proprietários, 20 clientes e 30 imóveis fictícios. Leads,
- * propostas, vendas etc. entram nas fases em que esses modelos existirem.
+ * Além da conta (tenant, papéis, equipe), semeia os cadastros da Fase 2 (15
+ * proprietários, 20 clientes, 30 imóveis) e o CRM da Fase 3 (4 corretores, 20
+ * leads, 10 visitas, 10 tarefas, 6 captações). Propostas/vendas/financeiro
+ * entram nas fases em que esses modelos existirem.
  */
 async function main() {
   const imobiliaria = await prisma.imobiliaria.upsert({
@@ -92,6 +93,7 @@ async function main() {
   }
 
   await seedCadastrosDemo(imobiliaria.id);
+  await seedCrmDemo(imobiliaria.id);
 }
 
 // --- Dados comerciais de demonstração (Fase 2) ----------------------------
@@ -247,3 +249,149 @@ main()
   .finally(async () => {
     await prisma.$disconnect();
   });
+
+// --- CRM de demonstração (Fase 3) -----------------------------------------
+
+const ETAPAS = [
+  "NOVO",
+  "CONTATO_REALIZADO",
+  "QUALIFICACAO",
+  "VISITA_AGENDADA",
+  "VISITA_REALIZADA",
+  "PROPOSTA",
+  "NEGOCIACAO",
+  "FECHADO",
+  "PERDIDO",
+] as const;
+const ORIGENS = ["SITE", "INSTAGRAM", "WHATSAPP", "PORTAL", "INDICACAO", "GOOGLE"] as const;
+const STATUS_VISITA = ["AGENDADA", "CONFIRMADA", "REALIZADA", "CANCELADA"] as const;
+const PRIORIDADES = ["BAIXA", "MEDIA", "ALTA", "URGENTE"] as const;
+
+async function seedCrmDemo(imobiliariaId: string) {
+  // 4 corretores
+  const corretorIds: string[] = [];
+  const nomesCorretor = ["Rafael Vendas", "Beatriz Imóveis", "Marcos Negócios", "Larissa Silva"];
+  for (let i = 0; i < nomesCorretor.length; i++) {
+    const id = `demo-corr-${i + 1}`;
+    corretorIds.push(id);
+    await prisma.corretor.upsert({
+      where: { id },
+      update: {},
+      create: {
+        id,
+        imobiliariaId,
+        nome: nomesCorretor[i],
+        creci: `F-${20000 + i}`,
+        email: `corretor${i + 1}@imobiliariademo.com.br`,
+        telefone: `(11) 9${String(60000000 + i).padStart(8, "0")}`,
+        ativo: true,
+        metaMensal: 5000000 + i * 1000000,
+        percentualComissao: 5 + i,
+      },
+    });
+  }
+
+  const imoveis = await prisma.imovel.findMany({
+    where: { imobiliariaId },
+    select: { id: true },
+    orderBy: { codigo: "asc" },
+  });
+  const clientes = await prisma.cliente.findMany({
+    where: { imobiliariaId },
+    select: { id: true },
+    orderBy: { criadoEm: "asc" },
+  });
+  const imovelIds = imoveis.map((i) => i.id);
+  const clienteIds = clientes.map((c) => c.id);
+  const proprietarios = await prisma.proprietario.findMany({ where: { imobiliariaId }, select: { id: true } });
+  const proprietarioIds = proprietarios.map((p) => p.id);
+
+  // 20 leads distribuídos pelas etapas
+  for (let i = 0; i < 20; i++) {
+    const id = `demo-lead-${i + 1}`;
+    await prisma.lead.upsert({
+      where: { id },
+      update: {},
+      create: {
+        id,
+        imobiliariaId,
+        nome: `${NOMES[i % NOMES.length]} (lead)`,
+        telefone: `(11) 9${String(50000000 + i).padStart(8, "0")}`,
+        origem: ORIGENS[i % ORIGENS.length],
+        etapa: ETAPAS[i % ETAPAS.length],
+        valorPretendido: 25000000 + i * 2000000,
+        corretorId: corretorIds[i % corretorIds.length],
+        imovelId: imovelIds.length ? imovelIds[i % imovelIds.length] : null,
+        clienteId: clienteIds.length ? clienteIds[i % clienteIds.length] : null,
+        proximaAcao: new Date(Date.now() + (i % 10) * 86400000),
+      },
+    });
+  }
+
+  // 10 visitas
+  for (let i = 0; i < 10 && imovelIds.length > 0; i++) {
+    const id = `demo-visita-${i + 1}`;
+    await prisma.visita.upsert({
+      where: { id },
+      update: {},
+      create: {
+        id,
+        imobiliariaId,
+        imovelId: imovelIds[i % imovelIds.length],
+        clienteId: clienteIds.length ? clienteIds[i % clienteIds.length] : null,
+        corretorId: corretorIds[i % corretorIds.length],
+        data: new Date(Date.now() + (i - 3) * 86400000),
+        duracaoMin: 30 + (i % 3) * 15,
+        status: STATUS_VISITA[i % STATUS_VISITA.length],
+      },
+    });
+  }
+
+  // 10 tarefas
+  for (let i = 0; i < 10; i++) {
+    const id = `demo-tarefa-${i + 1}`;
+    await prisma.tarefa.upsert({
+      where: { id },
+      update: {},
+      create: {
+        id,
+        imobiliariaId,
+        titulo: `Tarefa de exemplo ${i + 1}`,
+        descricao: "Item de demonstração do módulo de tarefas.",
+        prioridade: PRIORIDADES[i % PRIORIDADES.length],
+        prazo: new Date(Date.now() + (i % 7) * 86400000),
+        status: i % 4 === 0 ? "CONCLUIDA" : "PENDENTE",
+        concluidoEm: i % 4 === 0 ? new Date() : null,
+        clienteId: clienteIds.length ? clienteIds[i % clienteIds.length] : null,
+      },
+    });
+  }
+
+  // 6 captações
+  const statusCaptacao = [
+    "PROSPECTADO",
+    "CONTATO_REALIZADO",
+    "DOCUMENTACAO",
+    "CONTRATO",
+    "ATIVO",
+    "ENCERRADO",
+  ] as const;
+  for (let i = 0; i < 6 && imovelIds.length > 0; i++) {
+    const id = `demo-capt-${i + 1}`;
+    await prisma.captacao.upsert({
+      where: { id },
+      update: {},
+      create: {
+        id,
+        imobiliariaId,
+        proprietarioId: proprietarioIds.length ? proprietarioIds[i % proprietarioIds.length] : null,
+        imovelId: imovelIds[i % imovelIds.length],
+        corretorId: corretorIds[i % corretorIds.length],
+        dataCaptacao: new Date(Date.now() - i * 86400000),
+        exclusividade: i % 2 === 0,
+        comissaoPercentual: 5 + (i % 3),
+        status: statusCaptacao[i % statusCaptacao.length],
+      },
+    });
+  }
+}

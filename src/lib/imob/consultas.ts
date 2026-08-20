@@ -202,3 +202,20 @@ export async function resumoComercial(imobiliariaId: string) {
 
   return { imoveis, disponiveis, negociacao, vendidos, alugados, clientes, proprietarios, porTipo };
 }
+
+/** Listas mínimas para selects de vínculo (Fase 3). */
+export function listarImoveisParaSelecao(imobiliariaId: string) {
+  return prismaImob.imovel.findMany({
+    where: { imobiliariaId, status: { not: "INATIVO" } },
+    orderBy: { codigo: "asc" },
+    select: { id: true, codigo: true, titulo: true },
+  });
+}
+
+export function listarClientesParaSelecao(imobiliariaId: string) {
+  return prismaImob.cliente.findMany({
+    where: { imobiliariaId, ativo: true },
+    orderBy: { nome: "asc" },
+    select: { id: true, nome: true },
+  });
+}

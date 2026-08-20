@@ -49,3 +49,60 @@ export function rotulo(mapa: Record<string, string>, chave: string | null | unde
   if (!chave) return "—";
   return mapa[chave] ?? chave;
 }
+
+// --- Fase 3 ---------------------------------------------------------------
+
+export const ROTULO_ORIGEM_LEAD: Record<string, string> = {
+  SITE: "Site",
+  INSTAGRAM: "Instagram",
+  FACEBOOK: "Facebook",
+  WHATSAPP: "WhatsApp",
+  PORTAL: "Portal imobiliário",
+  INDICACAO: "Indicação",
+  GOOGLE: "Google",
+  TELEFONE: "Telefone",
+  PRESENCIAL: "Presencial",
+  OUTROS: "Outros",
+};
+
+export const ROTULO_ETAPA_LEAD: Record<string, string> = {
+  NOVO: "Novo lead",
+  CONTATO_REALIZADO: "Contato realizado",
+  QUALIFICACAO: "Qualificação",
+  VISITA_AGENDADA: "Visita agendada",
+  VISITA_REALIZADA: "Visita realizada",
+  PROPOSTA: "Proposta",
+  NEGOCIACAO: "Negociação",
+  FECHADO: "Fechado",
+  PERDIDO: "Perdido",
+};
+
+export const ROTULO_STATUS_VISITA: Record<string, string> = {
+  AGENDADA: "Agendada",
+  CONFIRMADA: "Confirmada",
+  REALIZADA: "Realizada",
+  CANCELADA: "Cancelada",
+  NAO_COMPARECEU: "Não compareceu",
+};
+
+export const ROTULO_PRIORIDADE: Record<string, string> = {
+  BAIXA: "Baixa",
+  MEDIA: "Média",
+  ALTA: "Alta",
+  URGENTE: "Urgente",
+};
+
+export const ROTULO_STATUS_TAREFA: Record<string, string> = {
+  PENDENTE: "Pendente",
+  CONCLUIDA: "Concluída",
+};
+
+export const ROTULO_STATUS_CAPTACAO: Record<string, string> = {
+  PROSPECTADO: "Prospectado",
+  CONTATO_REALIZADO: "Contato realizado",
+  VISITA_CAPTACAO: "Visita de captação",
+  DOCUMENTACAO: "Documentação",
+  CONTRATO: "Contrato",
+  ATIVO: "Ativo",
+  ENCERRADO: "Encerrado",
+};

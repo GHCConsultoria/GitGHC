@@ -212,3 +212,135 @@ export const listagemImoveisSchema = z.object({
   finalidade: z.union([z.enum(FINALIDADES_IMOVEL), z.literal("")]).optional(),
 });
 export type ListagemImoveisInput = z.infer<typeof listagemImoveisSchema>;
+
+// ===========================================================================
+// FASE 3 — Corretores, Leads, Visitas, Tarefas, Captação
+// ===========================================================================
+
+export const ORIGENS_LEAD = [
+  "SITE",
+  "INSTAGRAM",
+  "FACEBOOK",
+  "WHATSAPP",
+  "PORTAL",
+  "INDICACAO",
+  "GOOGLE",
+  "TELEFONE",
+  "PRESENCIAL",
+  "OUTROS",
+] as const;
+export const ETAPAS_LEAD = [
+  "NOVO",
+  "CONTATO_REALIZADO",
+  "QUALIFICACAO",
+  "VISITA_AGENDADA",
+  "VISITA_REALIZADA",
+  "PROPOSTA",
+  "NEGOCIACAO",
+  "FECHADO",
+  "PERDIDO",
+] as const;
+export const STATUS_VISITA = ["AGENDADA", "CONFIRMADA", "REALIZADA", "CANCELADA", "NAO_COMPARECEU"] as const;
+export const PRIORIDADES_TAREFA = ["BAIXA", "MEDIA", "ALTA", "URGENTE"] as const;
+export const STATUS_TAREFA = ["PENDENTE", "CONCLUIDA"] as const;
+export const STATUS_CAPTACAO = [
+  "PROSPECTADO",
+  "CONTATO_REALIZADO",
+  "VISITA_CAPTACAO",
+  "DOCUMENTACAO",
+  "CONTRATO",
+  "ATIVO",
+  "ENCERRADO",
+] as const;
+export const INTERESSES_VISITA = ["ALTO", "MEDIO", "BAIXO"] as const;
+
+const idOpcional = z.union([z.string().min(1), z.literal("")]).optional();
+const dataOpcional = z.union([z.coerce.date(), z.literal("")]).optional();
+const percentualOpcional = z.coerce.number().min(0).max(100).optional();
+
+export const corretorSchema = z.object({
+  nome: z.string().trim().min(1, "informe o nome"),
+  cpf: textoOpcional,
+  creci: textoOpcional,
+  email: z.union([z.string().trim().toLowerCase().email("e-mail inválido"), z.literal("")]).optional(),
+  telefone: textoOpcional,
+  whatsapp: textoOpcional,
+  dataEntrada: dataOpcional,
+  metaMensal: dinheiroOpcional,
+  percentualComissao: percentualOpcional,
+});
+export type CorretorInput = z.infer<typeof corretorSchema>;
+
+export const leadSchema = z.object({
+  nome: z.string().trim().min(1, "informe o nome"),
+  telefone: textoOpcional,
+  whatsapp: textoOpcional,
+  email: z.union([z.string().trim().toLowerCase().email("e-mail inválido"), z.literal("")]).optional(),
+  origem: z.enum(ORIGENS_LEAD).default("OUTROS"),
+  etapa: z.enum(ETAPAS_LEAD).default("NOVO"),
+  valorPretendido: dinheiroOpcional,
+  observacoes: textoOpcional,
+  proximaAcao: dataOpcional,
+  corretorId: idOpcional,
+  imovelId: idOpcional,
+  clienteId: idOpcional,
+});
+export type LeadInput = z.infer<typeof leadSchema>;
+
+export const moverLeadSchema = z.object({
+  leadId: z.string().min(1),
+  etapa: z.enum(ETAPAS_LEAD),
+});
+
+export const interacaoLeadSchema = z.object({
+  leadId: z.string().min(1),
+  tipo: z.string().trim().min(1, "informe o tipo"),
+  descricao: z.string().trim().min(1, "descreva a interação"),
+});
+
+export const visitaSchema = z.object({
+  imovelId: z.string().min(1, "selecione o imóvel"),
+  clienteId: idOpcional,
+  leadId: idOpcional,
+  corretorId: idOpcional,
+  data: z.coerce.date({ message: "informe data e hora" }),
+  duracaoMin: z.coerce.number().int().positive().default(30),
+  status: z.enum(STATUS_VISITA).default("AGENDADA"),
+  observacoes: textoOpcional,
+});
+export type VisitaInput = z.infer<typeof visitaSchema>;
+
+export const resultadoVisitaSchema = z.object({
+  visitaId: z.string().min(1),
+  status: z.enum(STATUS_VISITA),
+  interesse: z.union([z.enum(INTERESSES_VISITA), z.literal("")]).optional(),
+  nota: z.union([z.coerce.number().int().min(0).max(10), z.literal("")]).optional(),
+  feedback: textoOpcional,
+  proximoPasso: textoOpcional,
+});
+
+export const tarefaSchema = z.object({
+  titulo: z.string().trim().min(1, "informe o título"),
+  descricao: textoOpcional,
+  prioridade: z.enum(PRIORIDADES_TAREFA).default("MEDIA"),
+  prazo: dataOpcional,
+  responsavelId: idOpcional,
+  clienteId: idOpcional,
+  imovelId: idOpcional,
+  leadId: idOpcional,
+});
+export type TarefaInput = z.infer<typeof tarefaSchema>;
+
+export const captacaoSchema = z.object({
+  proprietarioId: idOpcional,
+  imovelId: idOpcional,
+  corretorId: idOpcional,
+  dataCaptacao: dataOpcional,
+  origem: textoOpcional,
+  exclusividade: z.coerce.boolean().optional(),
+  comissaoPercentual: percentualOpcional,
+  validadeExclusividade: dataOpcional,
+  status: z.enum(STATUS_CAPTACAO).default("PROSPECTADO"),
+  observacoes: textoOpcional,
+});
+export type CaptacaoInput = z.infer<typeof captacaoSchema>;

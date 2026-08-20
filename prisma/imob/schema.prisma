@@ -64,6 +64,11 @@ model Imobiliaria {
   imoveis       Imovel[]
   proprietarios Proprietario[]
   clientes      Cliente[]
+  corretores    Corretor[]
+  leads         Lead[]
+  visitas       Visita[]
+  tarefas       Tarefa[]
+  captacoes     Captacao[]
 
   criadoEm     DateTime @default(now())
   atualizadoEm DateTime @updatedAt
@@ -404,4 +409,240 @@ model FotoImovel {
 
   @@index([imovelId])
   @@map("imob_fotos_imovel")
+}
+
+// ===========================================================================
+// FASE 3 — CRM/Leads, Corretores, Visitas, Tarefas, Captação
+// ===========================================================================
+//
+// Referências a Imovel/Cliente/Proprietario são por id escalar (sem FK) para
+// não acoplar toda a malha de relações; a camada de consulta resolve os nomes
+// em lote. Só Corretor tem relações declaradas (é entidade nova e central no
+// CRM). Sem exclusão física: Corretor tem `ativo`; Lead/Visita/Captacao/Tarefa
+// mudam de etapa/status. Toda alteração relevante é auditada.
+
+model Corretor {
+  id String @id @default(cuid())
+
+  imobiliaria   Imobiliaria @relation(fields: [imobiliariaId], references: [id], onDelete: Cascade)
+  imobiliariaId String
+
+  nome     String
+  cpf      String?
+  creci    String?
+  email    String?
+  telefone String?
+  whatsapp String?
+
+  dataEntrada        DateTime?
+  ativo              Boolean   @default(true)
+  metaMensal         Int? // centavos
+  percentualComissao Float? // ex.: 5 = 5%
+
+  // Vínculo opcional ao usuário do sistema (um corretor pode ou não ter login).
+  usuarioId String?
+
+  leads     Lead[]
+  visitas   Visita[]
+  captacoes Captacao[]
+
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  @@index([imobiliariaId, ativo])
+  @@map("imob_corretores")
+}
+
+enum OrigemLead {
+  SITE
+  INSTAGRAM
+  FACEBOOK
+  WHATSAPP
+  PORTAL
+  INDICACAO
+  GOOGLE
+  TELEFONE
+  PRESENCIAL
+  OUTROS
+}
+
+enum EtapaLead {
+  NOVO
+  CONTATO_REALIZADO
+  QUALIFICACAO
+  VISITA_AGENDADA
+  VISITA_REALIZADA
+  PROPOSTA
+  NEGOCIACAO
+  FECHADO
+  PERDIDO
+}
+
+model Lead {
+  id String @id @default(cuid())
+
+  imobiliaria   Imobiliaria @relation(fields: [imobiliariaId], references: [id], onDelete: Cascade)
+  imobiliariaId String
+
+  nome            String
+  telefone        String?
+  whatsapp        String?
+  email           String?
+  origem          OrigemLead @default(OUTROS)
+  etapa           EtapaLead  @default(NOVO)
+  valorPretendido Int? // centavos
+  observacoes     String?
+  ultimoContato   DateTime?
+  proximaAcao     DateTime?
+
+  // ordenação dentro da coluna do Kanban
+  ordem Int @default(0)
+
+  corretor   Corretor? @relation(fields: [corretorId], references: [id])
+  corretorId String?
+
+  // referências escalares (resolvidas em lote na consulta)
+  imovelId  String?
+  clienteId String?
+
+  interacoes InteracaoLead[]
+
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  @@index([imobiliariaId, etapa])
+  @@index([corretorId])
+  @@map("imob_leads")
+}
+
+model InteracaoLead {
+  id String @id @default(cuid())
+
+  lead   Lead   @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  leadId String
+
+  tipo        String // ex.: "LIGACAO", "WHATSAPP", "EMAIL", "NOTA"
+  descricao   String
+  criadoPorId String?
+
+  criadoEm DateTime @default(now())
+
+  @@index([leadId])
+  @@map("imob_interacoes_lead")
+}
+
+enum StatusVisita {
+  AGENDADA
+  CONFIRMADA
+  REALIZADA
+  CANCELADA
+  NAO_COMPARECEU
+}
+
+model Visita {
+  id String @id @default(cuid())
+
+  imobiliaria   Imobiliaria @relation(fields: [imobiliariaId], references: [id], onDelete: Cascade)
+  imobiliariaId String
+
+  imovelId  String
+  clienteId String?
+  leadId    String?
+
+  corretor   Corretor? @relation(fields: [corretorId], references: [id])
+  corretorId String?
+
+  data        DateTime
+  duracaoMin  Int          @default(30)
+  status      StatusVisita @default(AGENDADA)
+  observacoes String?
+
+  // pós-visita (preenchido ao registrar o resultado)
+  interesse    String? // "ALTO" | "MEDIO" | "BAIXO"
+  nota         Int? // 0..10
+  feedback     String?
+  proximoPasso String?
+
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  @@index([imobiliariaId, data])
+  @@index([imobiliariaId, status])
+  @@map("imob_visitas")
+}
+
+enum PrioridadeTarefa {
+  BAIXA
+  MEDIA
+  ALTA
+  URGENTE
+}
+
+enum StatusTarefaImob {
+  PENDENTE
+  CONCLUIDA
+}
+
+model Tarefa {
+  id String @id @default(cuid())
+
+  imobiliaria   Imobiliaria @relation(fields: [imobiliariaId], references: [id], onDelete: Cascade)
+  imobiliariaId String
+
+  titulo     String
+  descricao  String?
+  prioridade PrioridadeTarefa @default(MEDIA)
+  prazo      DateTime?
+  status     StatusTarefaImob @default(PENDENTE)
+
+  responsavelId String? // UsuarioImob
+  clienteId     String?
+  imovelId      String?
+  leadId        String?
+
+  concluidoEm DateTime?
+
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  @@index([imobiliariaId, status])
+  @@index([imobiliariaId, prazo])
+  @@map("imob_tarefas")
+}
+
+enum StatusCaptacao {
+  PROSPECTADO
+  CONTATO_REALIZADO
+  VISITA_CAPTACAO
+  DOCUMENTACAO
+  CONTRATO
+  ATIVO
+  ENCERRADO
+}
+
+model Captacao {
+  id String @id @default(cuid())
+
+  imobiliaria   Imobiliaria @relation(fields: [imobiliariaId], references: [id], onDelete: Cascade)
+  imobiliariaId String
+
+  proprietarioId String?
+  imovelId       String?
+
+  corretor   Corretor? @relation(fields: [corretorId], references: [id])
+  corretorId String?
+
+  dataCaptacao          DateTime?
+  origem                String?
+  exclusividade         Boolean        @default(false)
+  comissaoPercentual    Float?
+  validadeExclusividade DateTime?
+  status                StatusCaptacao @default(PROSPECTADO)
+  observacoes           String?
+
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  @@index([imobiliariaId, status])
+  @@map("imob_captacoes")
 }
