@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { registrarAuditoria } from "@/lib/imob/auditoria";
 import { obterSessaoImob, type SessaoImob } from "@/lib/imob/auth";
 import { obterContratoDoTenant, obterLocacaoDoTenant, obterPropostaDoTenant } from "@/lib/imob/consultas-fin";
+import { notificar } from "@/lib/imob/notificacoes";
 import { prismaImob } from "@/lib/imob/prisma";
 import { exigirPermissao } from "@/lib/imob/rbac";
 import { paraMensagem, type ResultadoAcao } from "@/lib/imob/resultado";
@@ -183,6 +184,14 @@ export async function mudarStatusProposta(formData: FormData): Promise<Resultado
       }),
     ]);
     await auditar(sessao, "Proposta", alvo.id, "mudar-status", { de: alvo.status, para: parsed.data.status });
+    if (parsed.data.status === "ACEITA") {
+      await notificar(sessao.imobiliariaId, {
+        tipo: "PROPOSTA",
+        titulo: "Proposta aceita",
+        mensagem: "Uma proposta foi aceita.",
+        link: `/imob/propostas/${alvo.id}`,
+      });
+    }
     revalidatePath("/imob/propostas");
     revalidatePath(`/imob/propostas/${alvo.id}`);
     return { sucesso: true };
@@ -249,6 +258,12 @@ export async function criarVenda(formData: FormData): Promise<ResultadoAcao> {
       );
     });
 
+    await notificar(sessao.imobiliariaId, {
+      tipo: "VENDA",
+      titulo: "Venda registrada",
+      mensagem: "Uma nova venda foi registrada.",
+      link: "/imob/vendas",
+    });
     revalidatePath("/imob/vendas");
     revalidatePath("/imob/imoveis");
     return { sucesso: true };

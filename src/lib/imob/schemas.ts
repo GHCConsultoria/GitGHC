@@ -494,3 +494,34 @@ export const gerarComissoesSchema = z.object({
   pctGerente: z.coerce.number().min(0).max(100).default(0),
   pctImobiliaria: z.coerce.number().min(0).max(100).default(50),
 });
+
+// ===========================================================================
+// FASE 6 — Documentos, Notificações
+// ===========================================================================
+
+export const TIPOS_DOCUMENTO = [
+  "RG",
+  "CPF",
+  "COMPROVANTE_ENDERECO",
+  "MATRICULA",
+  "CONTRATO",
+  "CERTIDAO",
+  "COMPROVANTE_RENDA",
+  "OUTROS",
+] as const;
+
+export const documentoSchema = z.object({
+  nome: z.string().trim().min(1, "informe o nome do documento"),
+  tipo: z.enum(TIPOS_DOCUMENTO).default("OUTROS"),
+  url: z.string().trim().min(1, "informe a URL do documento"),
+  validade: dataOpcional,
+  clienteId: idOpcional,
+  proprietarioId: idOpcional,
+  imovelId: idOpcional,
+  contratoId: idOpcional,
+});
+export type DocumentoInput = z.infer<typeof documentoSchema>;
+
+export const buscaGlobalSchema = z.object({
+  q: z.string().trim().min(2, "digite ao menos 2 caracteres").max(80),
+});

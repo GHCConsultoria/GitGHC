@@ -57,6 +57,16 @@ export function SidebarImob({ itens, usuario, acaoSair }: Props) {
           <p className="font-display text-lg leading-tight">{usuario.imobiliaria}</p>
         </div>
 
+        <form action="/imob/busca" method="get" className="border-b border-rule px-3 py-2">
+          <input
+            type="search"
+            name="q"
+            placeholder="Buscar…"
+            aria-label="Busca global"
+            className="w-full rounded-sm border border-rule bg-paper px-3 py-1.5 text-sm outline-none focus:border-brass"
+          />
+        </form>
+
         <nav className="flex-1 overflow-y-auto p-3">
           <ul className="flex flex-col gap-0.5">
             {itens.map((item) => (

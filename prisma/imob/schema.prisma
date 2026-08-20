@@ -76,6 +76,8 @@ model Imobiliaria {
   lancamentos    LancamentoFinanceiro[]
   comissoes      Comissao[]
   regrasComissao RegraComissao[]
+  documentos     Documento[]
+  notificacoes   Notificacao[]
 
   criadoEm     DateTime @default(now())
   atualizadoEm DateTime @updatedAt
@@ -967,4 +969,79 @@ model RegraComissao {
 
   @@index([imobiliariaId, ativo])
   @@map("imob_regras_comissao")
+}
+
+// ===========================================================================
+// FASE 6 — Documentos (central), Notificações
+// ===========================================================================
+
+enum TipoDocumento {
+  RG
+  CPF
+  COMPROVANTE_ENDERECO
+  MATRICULA
+  CONTRATO
+  CERTIDAO
+  COMPROVANTE_RENDA
+  OUTROS
+}
+
+// Central de documentos: guarda a URL (storage externo, ver storage.ts) e
+// vincula opcionalmente a cliente/proprietário/imóvel/contrato por id escalar.
+model Documento {
+  id String @id @default(cuid())
+
+  imobiliaria   Imobiliaria @relation(fields: [imobiliariaId], references: [id], onDelete: Cascade)
+  imobiliariaId String
+
+  nome     String
+  tipo     TipoDocumento @default(OUTROS)
+  url      String
+  validade DateTime?
+
+  clienteId      String?
+  proprietarioId String?
+  imovelId       String?
+  contratoId     String?
+
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  @@index([imobiliariaId, tipo])
+  @@map("imob_documentos")
+}
+
+enum TipoNotificacao {
+  LEAD
+  PROPOSTA
+  VENDA
+  VISITA
+  CONTRATO
+  FINANCEIRO
+  TAREFA
+  SISTEMA
+}
+
+// Notificação interna, no nível do tenant (visível a toda a imobiliária).
+// Gerada por eventos do domínio (ver notificar() em src/lib/imob/
+// notificacoes.ts). `lida` é compartilhada — MVP de central de avisos.
+model Notificacao {
+  id String @id @default(cuid())
+
+  imobiliaria   Imobiliaria @relation(fields: [imobiliariaId], references: [id], onDelete: Cascade)
+  imobiliariaId String
+
+  tipo     TipoNotificacao
+  titulo   String
+  mensagem String
+  link     String?
+
+  lida   Boolean   @default(false)
+  lidaEm DateTime?
+
+  criadoEm DateTime @default(now())
+
+  @@index([imobiliariaId, lida])
+  @@index([imobiliariaId, criadoEm])
+  @@map("imob_notificacoes")
 }

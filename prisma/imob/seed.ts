@@ -17,8 +17,9 @@ const AUTH_USER_ID_DEMO = "demo-imob-admin-auth-id";
  * proprietários, 20 clientes, 30 imóveis), o CRM da Fase 3 (4 corretores, 20
  * leads, 10 visitas, 10 tarefas, 6 captações) e o comercial da Fase 4 (10
  * propostas, 8 vendas, 8 locações, 8 contratos — alguns vencendo, para popular
- * os alertas) e o financeiro da Fase 5 (12 lançamentos a pagar/receber,
- * comissões por venda e uma regra de comissão padrão).
+ * os alertas), o financeiro da Fase 5 (12 lançamentos a pagar/receber,
+ * comissões por venda e uma regra de comissão padrão) e o conteúdo da Fase 6
+ * (documentos e notificações de exemplo).
  */
 async function main() {
   const imobiliaria = await prisma.imobiliaria.upsert({
@@ -98,6 +99,63 @@ async function main() {
   await seedCrmDemo(imobiliaria.id);
   await seedFinanceiroDemo(imobiliaria.id);
   await seedContasEComissoesDemo(imobiliaria.id);
+  await seedConteudoDemo(imobiliaria.id);
+}
+
+// --- Documentos e notificações (Fase 6) -----------------------------------
+
+async function seedConteudoDemo(imobiliariaId: string) {
+  const clientes = await prisma.cliente.findMany({ where: { imobiliariaId }, select: { id: true } });
+  const imoveis = await prisma.imovel.findMany({ where: { imobiliariaId }, select: { id: true }, take: 5 });
+
+  const tiposDoc = ["RG", "CPF", "COMPROVANTE_ENDERECO", "MATRICULA", "CONTRATO", "COMPROVANTE_RENDA"] as const;
+  for (let i = 0; i < 6; i++) {
+    const id = `demo-doc-${i + 1}`;
+    await prisma.documento.upsert({
+      where: { id },
+      update: {},
+      create: {
+        id,
+        imobiliariaId,
+        nome: `Documento ${i + 1}`,
+        tipo: tiposDoc[i % tiposDoc.length],
+        url: `https://example.com/docs/documento-${i + 1}.pdf`,
+        clienteId: clientes.length ? clientes[i % clientes.length].id : null,
+        imovelId: imoveis.length ? imoveis[i % imoveis.length].id : null,
+      },
+    });
+  }
+
+  const notifs = [
+    {
+      id: "demo-notif-1",
+      tipo: "LEAD" as const,
+      titulo: "Novo lead",
+      mensagem: "Um lead entrou no funil.",
+      link: "/imob/leads",
+    },
+    {
+      id: "demo-notif-2",
+      tipo: "VENDA" as const,
+      titulo: "Venda registrada",
+      mensagem: "Uma venda foi registrada.",
+      link: "/imob/vendas",
+    },
+    {
+      id: "demo-notif-3",
+      tipo: "CONTRATO" as const,
+      titulo: "Contrato vencendo",
+      mensagem: "Um contrato vence em breve.",
+      link: "/imob/contratos",
+    },
+  ];
+  for (const n of notifs) {
+    await prisma.notificacao.upsert({
+      where: { id: n.id },
+      update: {},
+      create: { id: n.id, imobiliariaId, tipo: n.tipo, titulo: n.titulo, mensagem: n.mensagem, link: n.link },
+    });
+  }
 }
 
 // --- Contas a pagar/receber e comissões (Fase 5) --------------------------

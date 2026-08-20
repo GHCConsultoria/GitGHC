@@ -173,3 +173,13 @@ export async function resumoFinanceiro(imobiliariaId: string) {
     contratosVencendo: contratosVencendo30.length,
   };
 }
+
+/** Contratos para selects de vínculo (documentos). */
+export function listarContratosParaSelecao(imobiliariaId: string) {
+  return prismaImob.contrato.findMany({
+    where: { imobiliariaId },
+    orderBy: { criadoEm: "desc" },
+    select: { id: true, titulo: true },
+    take: 100,
+  });
+}

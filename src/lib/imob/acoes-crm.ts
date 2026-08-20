@@ -10,6 +10,7 @@ import {
   obterTarefaDoTenant,
   obterVisitaDoTenant,
 } from "@/lib/imob/consultas-crm";
+import { notificar } from "@/lib/imob/notificacoes";
 import { prismaImob } from "@/lib/imob/prisma";
 import { exigirPermissao } from "@/lib/imob/rbac";
 import { paraMensagem, type ResultadoAcao } from "@/lib/imob/resultado";
@@ -195,6 +196,12 @@ export async function criarLead(formData: FormData): Promise<ResultadoAcao> {
       },
     });
     await auditar(sessao, "Lead", criado.id, "criar", { nome: criado.nome, etapa: criado.etapa });
+    await notificar(sessao.imobiliariaId, {
+      tipo: "LEAD",
+      titulo: "Novo lead",
+      mensagem: `${criado.nome} entrou no funil.`,
+      link: `/imob/leads/${criado.id}`,
+    });
     revalidatePath("/imob/leads");
     return { sucesso: true };
   } catch (erro) {

@@ -166,3 +166,27 @@ export const ROTULO_STATUS_COMISSAO: Record<string, string> = {
   PAGA: "Paga",
   CANCELADA: "Cancelada",
 };
+
+// --- Fase 6 ---------------------------------------------------------------
+
+export const ROTULO_TIPO_DOCUMENTO: Record<string, string> = {
+  RG: "RG",
+  CPF: "CPF",
+  COMPROVANTE_ENDERECO: "Comprovante de endereço",
+  MATRICULA: "Matrícula",
+  CONTRATO: "Contrato",
+  CERTIDAO: "Certidão",
+  COMPROVANTE_RENDA: "Comprovante de renda",
+  OUTROS: "Outros",
+};
+
+export const ROTULO_TIPO_NOTIFICACAO: Record<string, string> = {
+  LEAD: "Lead",
+  PROPOSTA: "Proposta",
+  VENDA: "Venda",
+  VISITA: "Visita",
+  CONTRATO: "Contrato",
+  FINANCEIRO: "Financeiro",
+  TAREFA: "Tarefa",
+  SISTEMA: "Sistema",
+};

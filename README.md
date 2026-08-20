@@ -127,7 +127,7 @@ Supabase Auth e o Tailwind do repositório — sem introduzir Auth.js/shadcn/RHF
 - **Auth**: mesmo Supabase Auth (GoTrue) dos outros produtos; `UsuarioImob.authUserId`
   aponta pro mesmo `auth.users`. Cadastro self-service cria tenant + papéis padrão +
   primeiro Administrador numa transação, com rollback do usuário Auth se algo falhar.
-- **Status — Fases 1 a 5 concluídas.**
+- **Status — Fases 1 a 6 concluídas.**
   - Fase 1: arquitetura, banco, autenticação, multi-tenancy, usuários, papéis/permissões,
     onboarding e auditoria.
   - Fase 2: imóveis (CRUD completo com fotos, filtros, busca e paginação), proprietários,
@@ -150,5 +150,11 @@ Supabase Auth e o Tailwind do repositório — sem introduzir Auth.js/shadcn/RHF
     `src/lib/imob/fluxo.ts`) e **comissões** com fluxo prevista→aprovada→paga e geração
     automática a partir de uma venda (distribuição por papel em centavos exatos, método do
     maior resto — `src/lib/imob/comissao.ts`). Seed com 12 lançamentos e comissões.
-  - Próximas fases (cada uma com banco, validação e autorização reais): documentos e
-    notificações → relatórios e exportações (CSV/Excel/PDF).
+  - Fase 6: central de **documentos** (por URL, vinculáveis a cliente/proprietário/imóvel/
+    contrato), **notificações** internas geradas por eventos (novo lead, venda, proposta
+    aceita), **relatórios** com exportação **CSV** (função pura `src/lib/imob/csv.ts`,
+    endpoint `/imob/relatorios-csv`) e **busca global** respeitando o RBAC. Seed com
+    documentos e notificações de exemplo.
+  - Produto completo em relação ao escopo inicial. Evoluções futuras: upload binário de
+    mídia/documentos no Supabase Storage (abstração já pronta), notificações por
+    e-mail/WhatsApp/push, exportação Excel/PDF e testes E2E.
